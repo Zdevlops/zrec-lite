@@ -1,0 +1,2 @@
+-keep class com.zrec.recorder.** { *; }
+-dontwarn org.jetbrains.annotations.**
