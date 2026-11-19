@@ -49,11 +49,23 @@ object Caps {
     }
 
     fun fpsOptions(codec: Codec, quality: Int, displayW: Int, displayH: Int): List<Int> {
-        val (w, h) = sizeFor(quality, displayW, displayH)
-        val vc = videoCaps(codec.mime) ?: return FPS_CHOICES
-        return FPS_CHOICES.filter {
-            it <= codec.maxFps && runCatching { vc.isSizeAndRateSupported(w, h, it.toDouble()) }.getOrDefault(false)
-        }.ifEmpty { listOf(30) }
+        val size = sizeFor(quality, displayW, displayH)
+        val vc = videoCaps(codec.mime)
+        val out = ArrayList<Int>()
+        for (fps in FPS_CHOICES) {
+            if (fps > codec.maxFps) continue
+            if (vc == null) {
+                out.add(fps)
+                continue
+            }
+            val ok = try {
+                vc.areSizeAndRateSupported(size.first, size.second, fps.toDouble())
+            } catch (_: Throwable) {
+                false
+            }
+            if (ok) out.add(fps)
+        }
+        return if (out.isEmpty()) listOf(30) else out
     }
 
     private fun videoCaps(mime: String): MediaCodecInfo.VideoCapabilities? {

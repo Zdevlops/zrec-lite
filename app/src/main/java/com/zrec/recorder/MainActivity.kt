@@ -169,13 +169,18 @@ class MainActivity : Activity() {
     }
 
     private fun buildAudio() {
-        val labels = listOf("Off", "Mic", "Internal", "Mix")
+        val labels = if (Build.VERSION.SDK_INT >= 29) {
+            listOf("Off", "Mic", "Internal", "Mix")
+        } else {
+            listOf("Off", "Mic")
+        }
+        if (prefs.audio >= labels.size) prefs.audio = Config.AUDIO_MIC
         val views = chips(findViewById(R.id.chipsAudio), labels) { i ->
             prefs.audio = i
             buildAudio()
             refreshUi()
         }
-        select(views, prefs.audio.coerceIn(0, 3))
+        select(views, prefs.audio.coerceIn(0, labels.size - 1))
         tvAudioNote.text = when (prefs.audio) {
             Config.AUDIO_OFF -> "Tanpa suara."
             Config.AUDIO_MIC -> "Suara sekitar lewat mikrofon."

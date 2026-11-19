@@ -124,6 +124,9 @@ class RecorderService : Service() {
             return
         }
         quality = intent.getIntExtra(EXTRA_QUALITY, 1080)
+        val asked = intent.getIntExtra(EXTRA_AUDIO, Config.AUDIO_MIC)
+        // Playback capture needs Android 10; older phones fall back to the mic.
+        val audio = if (Build.VERSION.SDK_INT < 29 && asked > Config.AUDIO_MIC) Config.AUDIO_MIC else asked
         val c = Config(
             width = intent.getIntExtra(EXTRA_W, 1080),
             height = intent.getIntExtra(EXTRA_H, 1920),
@@ -131,7 +134,7 @@ class RecorderService : Service() {
             fps = intent.getIntExtra(EXTRA_FPS, 60),
             bitrate = intent.getIntExtra(EXTRA_BITRATE, 12_000_000),
             mime = intent.getStringExtra(EXTRA_MIME) ?: "video/avc",
-            audio = intent.getIntExtra(EXTRA_AUDIO, Config.AUDIO_MIC),
+            audio = audio,
             countdown = 0
         )
 
