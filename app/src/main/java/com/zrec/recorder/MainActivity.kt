@@ -6,19 +6,28 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.media.projection.MediaProjectionManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.view.Gravity
-import android.view.View
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 import java.util.Locale
 
 class MainActivity : Activity() {
+
+    companion object {
+        const val EXTRA_AUTOSTART = "autostart"
+        const val EXTRA_SHOT = "shot"
+        private const val REQ_PROJ = 1001
+        private const val REQ_PERM = 1002
+    }
 
     private lateinit var prefs: Prefs
     private lateinit var tvLabel: TextView
@@ -30,12 +39,16 @@ class MainActivity : Activity() {
     private lateinit var tvAudioNote: TextView
     private lateinit var seek: SeekBar
     private lateinit var swCount: Switch
+    private lateinit var swOverlay: Switch
+    private lateinit var swHide: Switch
+    private lateinit var swShake: Switch
 
     private var codecs: List<Caps.Codec> = emptyList()
     private var codec: Caps.Codec? = null
     private var fpsChips: List<TextView> = emptyList()
     private var resChips: List<TextView> = emptyList()
     private var pending: (() -> Unit)? = null
+    private var shotMode = false
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -53,8 +66,12 @@ class MainActivity : Activity() {
         tvAudioNote = findViewById(R.id.tvAudioNote)
         seek = findViewById(R.id.seekBitrate)
         swCount = findViewById(R.id.swCountdown)
+        swOverlay = findViewById(R.id.swOverlay)
+        swHide = findViewById(R.id.swHide)
+        swShake = findViewById(R.id.swShake)
 
-        codecs = Caps.probe()
+        val (dw, dh) = Caps.displaySize(this)
+        codecs = Caps.probe(dw, dh)
         codec = codecs.firstOrNull { it.mime == prefs.mime } ?: codecs.firstOrNull()
 
         if (codec == null) {
@@ -69,9 +86,7 @@ class MainActivity : Activity() {
         buildAudio()
         buildFps()
         buildBitrate()
-
-        swCount.isChecked = prefs.countdown
-        swCount.setOnCheckedChangeListener { _, v -> prefs.countdown = v }
+        buildSwitches()
 
         btnRecord.setOnClickListener {
             if (RecorderService.active) {
@@ -82,11 +97,37 @@ class MainActivity : Activity() {
         }
 
         refreshUi()
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(i: Intent?) {
+        if (i == null) return
+        if (i.getBooleanExtra(EXTRA_AUTOSTART, false) && !RecorderService.active) {
+            i.removeExtra(EXTRA_AUTOSTART)
+            handler.postDelayed({ beginRecord() }, 350)
+        }
+        if (i.getBooleanExtra(EXTRA_SHOT, false)) {
+            i.removeExtra(EXTRA_SHOT)
+            shotMode = true
+            handler.postDelayed({ beginShot() }, 350)
+        }
     }
 
     override fun onResume() {
         super.onResume()
         RecorderService.onEvent = { runOnUiThread { refreshUi() } }
+        if (swOverlay.isChecked && !hasOverlayPermission()) {
+            swOverlay.isChecked = false
+            prefs.overlay = false
+        } else if (swOverlay.isChecked) {
+            startOverlay()
+        }
         refreshUi()
     }
 
@@ -122,12 +163,18 @@ class MainActivity : Activity() {
         list.forEachIndexed { i, v -> v.isSelected = i == index }
     }
 
+    private fun label(quality: Int): String = when (quality) {
+        2160 -> "4K"
+        1440 -> "1440p"
+        else -> "${quality}p"
+    }
+
     private fun buildRes() {
         val c = codec ?: return
-        val options = c.supported.map { it.first }
-        val idx = options.indexOf(prefs.quality).let { if (it < 0) 0 else it }
+        val options = c.supported
+        val idx = options.indexOf(prefs.quality).let { if (it < 0) options.indexOf(1080).coerceAtLeast(0) else it }
         prefs.quality = options[idx]
-        val views = chips(findViewById(R.id.chipsRes), options.map { "${it}p" }) { i ->
+        val views = chips(findViewById(R.id.chipsRes), options.map { label(it) }) { i ->
             prefs.quality = options[i]
             select(resChips, i)
             buildFps()
@@ -149,10 +196,10 @@ class MainActivity : Activity() {
             refreshUi()
         }
         select(fpsChips, idx)
-        tvFpsNote.text = if (c.maxFps < 120) {
+        tvFpsNote.text = if (c.maxFps <= 60) {
             "Encoder HP ini mendukung sampai ${c.maxFps} fps."
         } else {
-            "Pilih 60 untuk file kecil, 90-120 untuk gerakan paling halus."
+            "Maks ${c.maxFps} fps. Frame tinggi bikin file jauh lebih besar."
         }
     }
 
@@ -192,27 +239,60 @@ class MainActivity : Activity() {
     private fun buildBitrate() {
         val auto = autoBitrate()
         val stored = prefs.bitrate
-        val progress = if (stored <= 0) 0 else ((stored / 1_000_000) - 1).coerceIn(1, 38)
+        val progress = if (stored <= 0) 0 else ((stored / 1_000_000) - 1).coerceIn(1, 78)
         seek.progress = progress
-        tvBitrate.text = if (progress == 0) {
-            String.format(Locale.US, "Auto · %d Mbps", auto / 1_000_000)
-        } else {
-            String.format(Locale.US, "%d Mbps", (progress + 1))
-        }
+        tvBitrate.text = bitrateLabel(progress, auto)
         seek.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar?, value: Int, fromUser: Boolean) {
                 prefs.bitrate = if (value == 0) 0 else (value + 1) * 1_000_000
-                tvBitrate.text = if (value == 0) {
-                    String.format(Locale.US, "Auto · %d Mbps", autoBitrate() / 1_000_000)
-                } else {
-                    String.format(Locale.US, "%d Mbps", value + 1)
-                }
+                tvBitrate.text = bitrateLabel(value, autoBitrate())
                 refreshUi()
             }
 
             override fun onStartTrackingTouch(sb: SeekBar?) {}
             override fun onStopTrackingTouch(sb: SeekBar?) {}
         })
+    }
+
+    private fun bitrateLabel(value: Int, auto: Int): String =
+        if (value == 0) String.format(Locale.US, "Auto · %d Mbps", auto / 1_000_000)
+        else String.format(Locale.US, "%d Mbps", value + 1)
+
+    private fun buildSwitches() {
+        swCount.isChecked = prefs.countdown
+        swCount.setOnCheckedChangeListener { _, v -> prefs.countdown = v }
+
+        swHide.isChecked = prefs.hideOverlayOnRecord
+        swHide.setOnCheckedChangeListener { _, v -> prefs.hideOverlayOnRecord = v }
+
+        swShake.isChecked = prefs.shake
+        swShake.setOnCheckedChangeListener { _, v -> prefs.shake = v }
+
+        swOverlay.isChecked = prefs.overlay && hasOverlayPermission()
+        swOverlay.setOnCheckedChangeListener { _, v ->
+            if (v) askOverlay() else {
+                prefs.overlay = false
+                startService(Intent(this, OverlayService::class.java).setAction(OverlayService.ACTION_HIDE))
+            }
+        }
+    }
+
+    private fun hasOverlayPermission(): Boolean =
+        Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)
+
+    private fun askOverlay() {
+        if (hasOverlayPermission()) {
+            prefs.overlay = true
+            startOverlay()
+            return
+        }
+        startActivity(
+            Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+        )
+    }
+
+    private fun startOverlay() {
+        runCatching { startService(Intent(this, OverlayService::class.java).setAction(OverlayService.ACTION_SHOW)) }
     }
 
     // ---------- state ----------
@@ -230,7 +310,7 @@ class MainActivity : Activity() {
             tvMain.text = String.format(
                 Locale.US, "%02d:%02d", RecorderService.lastSeconds / 60, RecorderService.lastSeconds % 60
             )
-            tvSub.text = "${RecorderService.lastFps} fps · ${prefs.quality}p"
+            tvSub.text = "${RecorderService.lastFps} fps · ${label(prefs.quality)}"
             btnRecord.text = "Stop"
             btnRecord.setBackgroundResource(R.drawable.bg_btn_ghost)
             btnRecord.setTextColor(getColor(R.color.accent))
@@ -259,7 +339,7 @@ class MainActivity : Activity() {
 
     // ---------- start ----------
 
-    private fun beginRecord() {
+    private fun needPermissions(): Array<String> {
         val need = mutableListOf<String>()
         if (prefs.audio != Config.AUDIO_OFF &&
             checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
@@ -267,10 +347,24 @@ class MainActivity : Activity() {
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) need += Manifest.permission.POST_NOTIFICATIONS
+        return need.toTypedArray()
+    }
 
+    private fun beginRecord() {
+        val need = needPermissions()
         if (need.isNotEmpty()) {
             pending = { requestProjection() }
-            requestPermissions(need.toTypedArray(), REQ_PERM)
+            requestPermissions(need, REQ_PERM)
+            return
+        }
+        requestProjection()
+    }
+
+    private fun beginShot() {
+        val need = needPermissions()
+        if (need.isNotEmpty()) {
+            pending = { requestProjection() }
+            requestPermissions(need, REQ_PERM)
             return
         }
         requestProjection()
@@ -290,12 +384,8 @@ class MainActivity : Activity() {
     }
 
     private fun requestProjection() {
-        val action = { startActivityForResult(projectionManager().createScreenCaptureIntent(), REQ_PROJ) }
-        if (prefs.countdown) {
-            countdown(action)
-        } else {
-            action()
-        }
+        val go = { startActivityForResult(projectionManager().createScreenCaptureIntent(), REQ_PROJ) }
+        if (prefs.countdown && !shotMode) countdown(go) else go()
     }
 
     private fun countdown(then: () -> Unit) {
@@ -323,14 +413,17 @@ class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != REQ_PROJ || resultCode != RESULT_OK || data == null) {
+            shotMode = false
             refreshUi()
             return
         }
         val (dw, dh) = Caps.displaySize(this)
         val (w, h) = Caps.sizeFor(prefs.quality, dw, dh)
         val bit = if (prefs.bitrate > 0) prefs.bitrate else autoBitrate()
+        val action = if (shotMode) RecorderService.ACTION_SHOT_ONLY else RecorderService.ACTION_START
+        shotMode = false
         val i = Intent(this, RecorderService::class.java).apply {
-            action = RecorderService.ACTION_START
+            this.action = action
             putExtra(RecorderService.EXTRA_RESULT, resultCode)
             putExtra(RecorderService.EXTRA_DATA, data)
             putExtra(RecorderService.EXTRA_W, w)
@@ -348,8 +441,5 @@ class MainActivity : Activity() {
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
-    companion object {
-        private const val REQ_PROJ = 1001
-        private const val REQ_PERM = 1002
-    }
+    private fun toast(m: String) = Toast.makeText(this, m, Toast.LENGTH_SHORT).show()
 }

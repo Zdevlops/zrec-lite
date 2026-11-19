@@ -15,13 +15,13 @@ object Caps {
         val label: String,
         val maxFps: Int,
         val bitrateMax: Int,
-        val supported: List<Pair<Int, Int>>
+        val supported: List<Int>
     )
 
-    val FPS_CHOICES = listOf(30, 60, 90, 120)
-    val QUALITY_CHOICES = listOf(1080, 720, 480)
+    val FPS_CHOICES = listOf(30, 60, 90, 120, 144, 240)
+    val QUALITY_CHOICES = listOf(2160, 1440, 1080, 720, 480)
 
-    fun probe(): List<Codec> {
+    fun probe(displayW: Int, displayH: Int): List<Codec> {
         val out = mutableListOf<Codec>()
         val infos = MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos
         for (mime in listOf("video/avc", "video/hevc")) {
@@ -29,10 +29,10 @@ object Caps {
                 if (!ci.isEncoder || mime !in ci.supportedTypes) continue
                 if (!ci.isHardwareAccelerated) continue
                 val vc = runCatching { ci.getCapabilitiesForType(mime).videoCapabilities }.getOrNull() ?: continue
-                val sizes = QUALITY_CHOICES.mapNotNull { short ->
-                    val (w, h) = sizeFor(short, 1080, 2400)
-                    if (runCatching { vc.isSizeSupported(w, h) }.getOrDefault(false)) short to short else null
-                }.map { it.first }
+                val sizes = QUALITY_CHOICES.filter { short ->
+                    val (w, h) = sizeFor(short, displayW, displayH)
+                    runCatching { vc.isSizeSupported(w, h) }.getOrDefault(false)
+                }
                 if (sizes.isEmpty()) continue
                 val maxFps = runCatching { vc.supportedFrameRates.upper.toInt() }.getOrDefault(60)
                 out += Codec(
@@ -40,7 +40,7 @@ object Caps {
                     label = if (mime == "video/hevc") "H.265" else "H.264",
                     maxFps = maxFps.coerceAtMost(240),
                     bitrateMax = runCatching { vc.bitrateRange.upper }.getOrDefault(50_000_000),
-                    supported = sizes.map { it to it }
+                    supported = sizes
                 )
                 break
             }
@@ -77,12 +77,16 @@ object Caps {
         return null
     }
 
-    /** Target short side, keeping the display aspect, aligned for the encoder. */
+    /**
+     * Target short side, keeping the display aspect. Never upscales past the
+     * panel, and stays 16-aligned because some encoders refuse odd sizes.
+     */
     fun sizeFor(quality: Int, displayW: Int, displayH: Int): Pair<Int, Int> {
-        val long = maxOf(displayW, displayH).toFloat()
-        val short = minOf(displayW, displayH).toFloat()
-        val scale = quality / short
-        return align((long * scale).toInt()) to align((short * scale).toInt())
+        val longSide = maxOf(displayW, displayH).toFloat()
+        val shortSide = minOf(displayW, displayH).toFloat()
+        val target = minOf(quality.toFloat(), shortSide)
+        val scale = if (shortSide <= 0f) 1f else target / shortSide
+        return align((longSide * scale).toInt()) to align((shortSide * scale).toInt())
     }
 
     private fun align(v: Int): Int = (v / 16) * 16
@@ -90,7 +94,7 @@ object Caps {
     fun autoBitrate(w: Int, h: Int, fps: Int): Int {
         // ~0.10 bit per pixel per frame: 1080p60 lands near 12 Mbps.
         val raw = (w.toLong() * h * fps * 0.10).toLong()
-        return raw.coerceIn(2_000_000L, 40_000_000L).toInt()
+        return raw.coerceIn(2_000_000L, 80_000_000L).toInt()
     }
 
     fun displaySize(ctx: android.content.Context): Pair<Int, Int> {

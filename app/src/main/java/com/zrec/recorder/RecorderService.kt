@@ -5,9 +5,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.hardware.display.DisplayManager
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
@@ -16,15 +19,20 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.view.Display
+import android.widget.Toast
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.sqrt
 
-class RecorderService : Service() {
+class RecorderService : Service(), SensorEventListener {
 
     companion object {
         const val ACTION_START = "com.zrec.START"
         const val ACTION_STOP = "com.zrec.STOP"
         const val ACTION_PAUSE = "com.zrec.PAUSE"
         const val ACTION_RESUME = "com.zrec.RESUME"
+        const val ACTION_SHOT = "com.zrec.SHOT"
+        const val ACTION_SHOT_ONLY = "com.zrec.SHOT_ONLY"
 
         const val EXTRA_RESULT = "result"
         const val EXTRA_DATA = "data"
@@ -39,6 +47,8 @@ class RecorderService : Service() {
 
         private const val CHANNEL = "zrec"
         private const val NOTIF = 71
+        private const val SHAKE_G = 2.6f
+        private const val SHAKE_WINDOW_MS = 1500L
 
         @Volatile var active = false
         @Volatile var paused = false
@@ -55,6 +65,11 @@ class RecorderService : Service() {
     private var quality = 1080
     private var finishing = false
 
+    private var sensors: SensorManager? = null
+    private var accelerometer: Sensor? = null
+    private var lastShakeAt = 0L
+    private var shakeCount = 0
+
     private val main = Handler(Looper.getMainLooper())
 
     private val stats: (Int, Long) -> Unit = { fps, secs ->
@@ -64,10 +79,6 @@ class RecorderService : Service() {
     }
     private val fatal: (String) -> Unit = { finishNow() }
 
-    /**
-     * Rotating the device mid-recording would otherwise leave the frame at the old
-     * orientation, so the session is closed and a new file is opened at the new size.
-     */
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {}
         override fun onDisplayRemoved(displayId: Int) {}
@@ -90,11 +101,15 @@ class RecorderService : Service() {
             )
         }
         getSystemService(DisplayManager::class.java).registerDisplayListener(displayListener, main)
+        sensors = getSystemService(SensorManager::class.java)
+        accelerometer = sensors?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> finishNow()
+            ACTION_SHOT -> screenshot()
+            ACTION_SHOT_ONLY -> startShotOnly(intent)
             ACTION_PAUSE -> {
                 recorder?.pause()
                 paused = true
@@ -160,8 +175,99 @@ class RecorderService : Service() {
         active = true
         paused = false
         rec.start()
+        startShake()
         publish()
     }
+
+    /** One-shot screenshot: borrows the projection, grabs a frame, then lets go. */
+    private fun startShotOnly(intent: Intent) {
+        val data = if (Build.VERSION.SDK_INT >= 33) {
+            intent.getParcelableExtra(EXTRA_DATA, Intent::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(EXTRA_DATA)
+        }
+        val resultCode = intent.getIntExtra(EXTRA_RESULT, 0)
+        if (data == null || resultCode == 0) {
+            stopSelf()
+            return
+        }
+        startForegroundCompat(buildNotification("Screenshot", "Mengambil gambar", false))
+        val mgr = getSystemService(MediaProjectionManager::class.java)
+        val proj = runCatching { mgr.getMediaProjection(resultCode, data) }.getOrNull()
+        if (proj == null) {
+            runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
+            stopSelf()
+            return
+        }
+        projection = proj
+        Shot.capture(
+            this, proj,
+            intent.getIntExtra(EXTRA_W, 1080),
+            intent.getIntExtra(EXTRA_H, 1920),
+            intent.getIntExtra(EXTRA_DPI, 420)
+        ) { name ->
+            main.post {
+                toast(if (name != null) "Screenshot disimpan" else "Screenshot gagal")
+                runCatching { proj.stop() }
+                projection = null
+                runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
+                stopSelf()
+            }
+        }
+    }
+
+    private fun screenshot() {
+        val proj = projection ?: run {
+            toast("Belum merekam")
+            return
+        }
+        val c = cfg ?: return
+        Shot.capture(this, proj, c.width, c.height, c.dpi) { name ->
+            main.post {
+                toast(if (name != null) "Screenshot disimpan" else "Screenshot gagal")
+            }
+        }
+    }
+
+    // ---------- shake to stop ----------
+
+    private fun startShake() {
+        if (!Prefs(this).shake) return
+        val s = accelerometer ?: return
+        sensors?.registerListener(this, s, SensorManager.SENSOR_DELAY_GAME)
+    }
+
+    private fun stopShake() {
+        runCatching { sensors?.unregisterListener(this) }
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        val e = event ?: return
+        if (e.sensor.type != Sensor.TYPE_ACCELEROMETER) return
+        val gx = e.values[0] / SensorManager.GRAVITY_EARTH
+        val gy = e.values[1] / SensorManager.GRAVITY_EARTH
+        val gz = e.values[2] / SensorManager.GRAVITY_EARTH
+        val g = sqrt(gx * gx + gy * gy + gz * gz)
+        if (abs(g) < SHAKE_G) return
+        val now = System.currentTimeMillis()
+        if (now - lastShakeAt > 300) {
+            lastShakeAt = now
+            shakeCount++
+            if (shakeCount >= 2) {
+                shakeCount = 0
+                main.post {
+                    toast("Rekaman dihentikan")
+                    finishNow()
+                }
+            }
+        }
+        if (now - lastShakeAt > SHAKE_WINDOW_MS) shakeCount = 0
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    // ---------- rotation ----------
 
     private fun maybeRotate() {
         val proj = projection ?: return
@@ -203,16 +309,14 @@ class RecorderService : Service() {
             this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val toggle = PendingIntent.getService(
-            this, 1,
-            Intent(this, RecorderService::class.java).setAction(if (isPaused) ACTION_RESUME else ACTION_PAUSE),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val stop = PendingIntent.getService(
-            this, 2,
-            Intent(this, RecorderService::class.java).setAction(ACTION_STOP),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        fun action(id: Int, label: String, act: String) = Notification.Action.Builder(
+            null, label,
+            PendingIntent.getService(
+                this, id, Intent(this, RecorderService::class.java).setAction(act),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        ).build()
+
         return Notification.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_notif)
             .setContentTitle(title)
@@ -221,8 +325,9 @@ class RecorderService : Service() {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
-            .addAction(Notification.Action.Builder(null, if (isPaused) "Lanjut" else "Jeda", toggle).build())
-            .addAction(Notification.Action.Builder(null, "Stop", stop).build())
+            .addAction(action(1, "Shot", ACTION_SHOT))
+            .addAction(action(2, if (isPaused) "Lanjut" else "Jeda", if (isPaused) ACTION_RESUME else ACTION_PAUSE))
+            .addAction(action(3, "Stop", ACTION_STOP))
             .build()
     }
 
@@ -234,9 +339,12 @@ class RecorderService : Service() {
         }
     }
 
+    private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+
     private fun finishNow() {
         if (finishing) return
         finishing = true
+        stopShake()
         runCatching { recorder?.stop() }
         recorder = null
         runCatching { projection?.stop() }
@@ -252,6 +360,7 @@ class RecorderService : Service() {
     }
 
     override fun onDestroy() {
+        stopShake()
         runCatching {
             getSystemService(DisplayManager::class.java).unregisterDisplayListener(displayListener)
         }

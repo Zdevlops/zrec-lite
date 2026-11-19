@@ -48,4 +48,16 @@ class Prefs(ctx: Context) {
     var countdown: Boolean
         get() = sp.getBoolean("countdown", true)
         set(v) = sp.edit().putBoolean("countdown", v).apply()
+
+    var overlay: Boolean
+        get() = sp.getBoolean("overlay", true)
+        set(v) = sp.edit().putBoolean("overlay", v).apply()
+
+    var hideOverlayOnRecord: Boolean
+        get() = sp.getBoolean("hideOnRecord", true)
+        set(v) = sp.edit().putBoolean("hideOnRecord", v).apply()
+
+    var shake: Boolean
+        get() = sp.getBoolean("shake", true)
+        set(v) = sp.edit().putBoolean("shake", v).apply()
 }
