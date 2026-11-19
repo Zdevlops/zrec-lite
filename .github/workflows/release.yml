@@ -2,12 +2,9 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags:
+      - "v*"
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag rilis, contoh v1.1'
-        required: true
 
 permissions:
   contents: write
@@ -21,25 +18,23 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: "8.9"
 
       - name: Build release APK
         run: gradle assembleRelease --no-daemon
 
       - name: Publish release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="${{ github.event.inputs.tag }}"
-          if [ -z "$TAG" ]; then TAG="${GITHUB_REF_NAME}"; fi
-          gh release create "$TAG" \
-            app/build/outputs/apk/release/app-release.apk \
-            --title "Zrec $TAG" \
-            --notes "Zrec $TAG — screen recorder Android.
-
-Isi rilis: file APK saja (tanpa screenshot, tanpa rekaman)."
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Zrec ${{ github.ref_name }}
+          body: |
+            Zrec ${{ github.ref_name }} - screen recorder Android.
+            Isi rilis: file APK saja, tanpa screenshot dan tanpa rekaman.
+          files: app/build/outputs/apk/release/app-release.apk
+          draft: false
+          prerelease: false
