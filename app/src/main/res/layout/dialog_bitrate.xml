@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:max="78"
-        android:progressTint="@color/accent"
-        android:thumbTint="@color/accent"
+        android:progressTint="@color/txt"
+        android:thumbTint="@color/txt"
         android:progressBackgroundTint="@color/line" />
 </LinearLayout>

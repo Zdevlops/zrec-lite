@@ -1,6 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Zrec</string>
-    <string name="btn_start">Mulai merekam</string>
-    <string name="btn_stop">Stop</string>
+
+    <string name="btn_start">Start recording</string>
+    <string name="btn_stop">Stop recording</string>
+
+    <string name="state_ready">Ready</string>
+    <string name="state_recording">Recording</string>
+    <string name="state_paused">Paused</string>
+    <string name="state_countdown">Starting in %1$d</string>
+
+    <string name="section_capture">Capture</string>
+    <string name="section_controls">Controls</string>
+
+    <string name="label_resolution">Resolution</string>
+    <string name="label_fps">Frame rate</string>
+    <string name="label_codec">Codec</string>
+    <string name="label_bitrate">Bitrate</string>
+    <string name="label_audio">Audio</string>
+
+    <string name="label_floating">Floating control</string>
+    <string name="hint_floating">Record and screenshot from any app</string>
+    <string name="label_hide">Hide while recording</string>
+    <string name="hint_hide">Keeps the control out of the video</string>
+    <string name="label_shake">Shake to stop</string>
+    <string name="hint_shake">Shake the phone twice while recording</string>
+    <string name="label_countdown">Countdown</string>
+    <string name="hint_countdown">Starts 3 seconds after you tap</string>
+
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_done">Done</string>
+    <string name="dialog_fps_title">Frame rate · %1$s max %2$d</string>
+
+    <string name="no_encoder">No H.264 or H.265 encoder on this device</string>
+    <string name="note_internal">Internal audio can be blocked by some apps.</string>
+    <string name="note_fps">This device\'s encoder caps at %1$d fps.</string>
+    <string name="note_software">No hardware encoder — recording runs on the CPU.</string>
 </resources>

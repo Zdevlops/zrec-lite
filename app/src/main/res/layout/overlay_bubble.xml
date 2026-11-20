@@ -22,7 +22,7 @@
             android:background="@drawable/bg_overlay_btn"
             android:padding="10dp"
             android:src="@drawable/ic_camera"
-            android:contentDescription="Screenshot"
+            android:contentDescription="Take a screenshot"
             android:scaleType="fitCenter" />
 
         <ImageButton
@@ -32,7 +32,7 @@
             android:background="@drawable/bg_overlay_btn"
             android:padding="10dp"
             android:src="@drawable/ic_rec"
-            android:contentDescription="Mulai atau stop"
+            android:contentDescription="Start or stop recording"
             android:scaleType="fitCenter" />
 
         <ImageButton
@@ -42,7 +42,7 @@
             android:background="@drawable/bg_overlay_btn"
             android:padding="10dp"
             android:src="@drawable/ic_pause"
-            android:contentDescription="Jeda"
+            android:contentDescription="Pause or resume"
             android:scaleType="fitCenter" />
     </LinearLayout>
 

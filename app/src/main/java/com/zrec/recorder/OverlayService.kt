@@ -205,7 +205,7 @@ class OverlayService : Service() {
 
     private fun togglePause() {
         if (!RecorderService.active) {
-            toast("Belum merekam")
+            toast("Not recording yet")
             return
         }
         val action = if (RecorderService.paused) RecorderService.ACTION_RESUME else RecorderService.ACTION_PAUSE
@@ -217,7 +217,7 @@ class OverlayService : Service() {
         expand(false)
         if (RecorderService.active) {
             startService(Intent(this, RecorderService::class.java).setAction(RecorderService.ACTION_SHOT))
-            toast("Screenshot disimpan")
+            toast("Screenshot saved")
         } else {
             startActivity(
                 Intent(this, MainActivity::class.java)

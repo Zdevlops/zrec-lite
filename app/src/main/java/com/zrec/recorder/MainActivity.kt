@@ -85,7 +85,7 @@ class MainActivity : Activity() {
         codec = codecs.firstOrNull { it.mime == prefs.mime } ?: codecs.firstOrNull()
 
         if (codec == null) {
-            tvState.text = "Tidak ada encoder H.264/H.265 di perangkat ini"
+            tvState.text = getString(R.string.no_encoder)
             btnRecord.isEnabled = false
             btnRecord.alpha = 0.4f
             return
@@ -152,7 +152,7 @@ class MainActivity : Activity() {
     private fun buildRows() {
         onRow(R.id.rowRes) {
             val idx = resOptions.indexOf(prefs.quality).coerceAtLeast(0)
-            pick("Resolusi", resOptions.map { label(it) }, idx) { i ->
+            pick(getString(R.string.label_resolution), resOptions.map { label(it) }, idx) { i ->
                 prefs.quality = resOptions[i]
                 syncOptions()
                 refreshUi()
@@ -162,7 +162,7 @@ class MainActivity : Activity() {
         onRow(R.id.rowFps) {
             val cap = fpsCeiling()
             val idx = fpsOptions.indexOf(prefs.fps).coerceAtLeast(0)
-            pick("Frame rate · ${label(prefs.quality)} maks $cap", fpsOptions.map { "$it fps" }, idx) { i ->
+            pick(getString(R.string.dialog_fps_title, label(prefs.quality), cap), fpsOptions.map { "$it fps" }, idx) { i ->
                 prefs.fps = fpsOptions[i]
                 refreshUi()
             }
@@ -170,7 +170,7 @@ class MainActivity : Activity() {
 
         onRow(R.id.rowCodec) {
             val idx = codecs.indexOfFirst { it.mime == codec?.mime }.coerceAtLeast(0)
-            pick("Codec", codecs.map { it.label }, idx) { i ->
+            pick(getString(R.string.label_codec), codecs.map { it.label }, idx) { i ->
                 codec = codecs[i]
                 prefs.mime = codecs[i].mime
                 syncOptions()
@@ -183,7 +183,7 @@ class MainActivity : Activity() {
         onRow(R.id.rowAudio) {
             val labels = audioLabels()
             val idx = prefs.audio.coerceIn(0, labels.size - 1)
-            pick("Audio", labels, idx) { i ->
+            pick(getString(R.string.label_audio), labels, idx) { i ->
                 prefs.audio = i
                 refreshUi()
             }
@@ -198,7 +198,7 @@ class MainActivity : Activity() {
                 d.dismiss()
                 onPick(i)
             }
-            .setNegativeButton("Batal", null)
+            .setNegativeButton(getString(R.string.dialog_cancel), null)
             .show()
     }
 
@@ -220,9 +220,9 @@ class MainActivity : Activity() {
             override fun onStopTrackingTouch(sb: SeekBar?) {}
         })
         AlertDialog.Builder(this, R.style.Theme_Zrec_Dialog)
-            .setTitle("Bitrate")
+            .setTitle(getString(R.string.label_bitrate))
             .setView(view)
-            .setPositiveButton("Selesai", null)
+            .setPositiveButton(getString(R.string.dialog_done), null)
             .show()
     }
 
@@ -319,41 +319,44 @@ class MainActivity : Activity() {
 
         val notes = mutableListOf<String>()
         if (prefs.audio == Config.AUDIO_INTERNAL || prefs.audio == Config.AUDIO_BOTH) {
-            notes += "Audio internal bisa diblokir sebagian aplikasi."
+            notes += getString(R.string.note_internal)
         }
         val allowed = Caps.FPS_CEILING[prefs.quality] ?: 60
-        if ((codec?.maxFps ?: 0) < allowed) {
-            notes += "Encoder perangkat ini maksimal ${codec?.maxFps} fps."
+        val encoderMax = codec?.maxFps ?: 0
+        if (encoderMax < allowed) {
+            notes += getString(R.string.note_fps, encoderMax)
         }
         if (codec?.hardware == false) {
-            notes += "Tidak ada encoder hardware, perekaman memakai CPU."
+            notes += getString(R.string.note_software)
         }
         tvNote.text = notes.joinToString("\n")
         tvNote.visibility = if (notes.isEmpty()) View.GONE else View.VISIBLE
 
         if (RecorderService.active) {
             dot.visibility = View.VISIBLE
-            tvState.text = if (RecorderService.paused) "Dijeda" else "Merekam"
+            tvState.text = getString(
+                if (RecorderService.paused) R.string.state_paused else R.string.state_recording
+            )
             tvState.setTextColor(getColor(R.color.txt))
             tvTime.setTextColor(getColor(R.color.txt))
             tvTime.text = time(RecorderService.lastSeconds)
             tvFps.visibility = View.VISIBLE
             tvFps.text = "${RecorderService.lastFps} fps"
             btnRecord.text = getString(R.string.btn_stop)
-            btnRecord.setBackgroundResource(R.drawable.bg_btn_ghost)
-            btnRecord.setTextColor(getColor(R.color.accent))
+            btnRecord.setBackgroundResource(R.drawable.bg_btn_stop)
+            btnRecord.setTextColor(getColor(R.color.onAccent))
             return
         }
 
         dot.visibility = View.GONE
-        tvState.text = "Siap merekam"
+        tvState.text = getString(R.string.state_ready)
         tvState.setTextColor(getColor(R.color.txtDim))
         tvTime.setTextColor(getColor(R.color.txtFaint))
         tvTime.text = "00:00"
         tvFps.visibility = View.GONE
         btnRecord.text = getString(R.string.btn_start)
         btnRecord.setBackgroundResource(R.drawable.bg_btn_record)
-        btnRecord.setTextColor(getColor(R.color.txt))
+        btnRecord.setTextColor(getColor(R.color.bg))
     }
 
     // ---------- start ----------
@@ -417,7 +420,7 @@ class MainActivity : Activity() {
         val runnable = object : Runnable {
             override fun run() {
                 if (n > 0) {
-                    tvState.text = "Mulai dalam $n"
+                    tvState.text = getString(R.string.state_countdown, n)
                     n--
                     handler.postDelayed(this, 1000)
                 } else {

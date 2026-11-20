@@ -12,8 +12,8 @@
         android:orientation="vertical"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="20dp"
-        android:paddingBottom="32dp">
+        android:paddingTop="24dp"
+        android:paddingBottom="40dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -29,28 +29,28 @@
                 android:textColor="@color/txt"
                 android:textSize="20sp"
                 android:fontFamily="sans-serif-medium"
-                android:letterSpacing="-0.01" />
+                android:letterSpacing="-0.02" />
 
             <TextView
                 android:id="@+id/tvVersion"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/txtFaint"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:fontFamily="monospace" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="40dp"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
             <View
                 android:id="@+id/dot"
-                android:layout_width="6dp"
-                android:layout_height="6dp"
+                android:layout_width="7dp"
+                android:layout_height="7dp"
                 android:layout_marginEnd="8dp"
                 android:background="@drawable/bg_dot_rec"
                 android:visibility="gone" />
@@ -59,7 +59,7 @@
                 android:id="@+id/tvState"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Siap merekam"
+                android:text="@string/state_ready"
                 android:textColor="@color/txtDim"
                 android:textSize="13sp" />
         </LinearLayout>
@@ -67,7 +67,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:orientation="horizontal"
             android:gravity="bottom">
 
@@ -77,8 +77,9 @@
                 android:layout_height="wrap_content"
                 android:text="00:00"
                 android:textColor="@color/txtFaint"
-                android:textSize="52sp"
+                android:textSize="56sp"
                 android:fontFamily="monospace"
+                android:letterSpacing="-0.03"
                 android:includeFontPadding="false" />
 
             <TextView
@@ -86,9 +87,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
-                android:layout_marginBottom="10dp"
+                android:layout_marginBottom="9dp"
                 android:textColor="@color/txtDim"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:fontFamily="monospace"
                 android:visibility="gone" />
         </LinearLayout>
@@ -96,33 +97,30 @@
         <TextView
             android:id="@+id/btnRecord"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="24dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="28dp"
             android:background="@drawable/bg_btn_record"
             android:gravity="center"
             android:text="@string/btn_start"
-            android:textColor="#FFFFFFFF"
+            android:textColor="@color/bg"
             android:textSize="15sp"
             android:fontFamily="sans-serif-medium" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:layout_marginBottom="8dp"
-            android:text="Rekaman"
+            android:layout_marginTop="36dp"
+            android:layout_marginBottom="10dp"
+            android:text="@string/section_capture"
             android:textColor="@color/txtFaint"
-            android:textSize="13sp" />
+            android:textSize="12sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card"
             android:orientation="vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp">
+            android:padding="6dp">
 
             <LinearLayout
                 android:id="@+id/rowRes"
@@ -132,13 +130,15 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:paddingStart="14dp"
+                android:paddingEnd="12dp">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Resolusi"
+                    android:text="@string/label_resolution"
                     android:textColor="@color/txt"
                     android:textSize="15sp" />
 
@@ -150,9 +150,9 @@
                     android:textSize="15sp" />
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginStart="6dp"
                     android:src="@drawable/ic_chevron"
                     android:contentDescription="@null" />
             </LinearLayout>
@@ -160,6 +160,8 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="14dp"
                 android:background="@color/line" />
 
             <LinearLayout
@@ -170,13 +172,15 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:paddingStart="14dp"
+                android:paddingEnd="12dp">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Frame rate"
+                    android:text="@string/label_fps"
                     android:textColor="@color/txt"
                     android:textSize="15sp" />
 
@@ -188,9 +192,9 @@
                     android:textSize="15sp" />
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginStart="6dp"
                     android:src="@drawable/ic_chevron"
                     android:contentDescription="@null" />
             </LinearLayout>
@@ -198,6 +202,8 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="14dp"
                 android:background="@color/line" />
 
             <LinearLayout
@@ -208,13 +214,15 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:paddingStart="14dp"
+                android:paddingEnd="12dp">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Codec"
+                    android:text="@string/label_codec"
                     android:textColor="@color/txt"
                     android:textSize="15sp" />
 
@@ -226,9 +234,9 @@
                     android:textSize="15sp" />
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginStart="6dp"
                     android:src="@drawable/ic_chevron"
                     android:contentDescription="@null" />
             </LinearLayout>
@@ -236,6 +244,8 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="14dp"
                 android:background="@color/line" />
 
             <LinearLayout
@@ -246,13 +256,15 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:paddingStart="14dp"
+                android:paddingEnd="12dp">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Bitrate"
+                    android:text="@string/label_bitrate"
                     android:textColor="@color/txt"
                     android:textSize="15sp" />
 
@@ -264,9 +276,9 @@
                     android:textSize="15sp" />
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginStart="6dp"
                     android:src="@drawable/ic_chevron"
                     android:contentDescription="@null" />
             </LinearLayout>
@@ -274,6 +286,8 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="14dp"
                 android:background="@color/line" />
 
             <LinearLayout
@@ -284,13 +298,15 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:paddingStart="14dp"
+                android:paddingEnd="12dp">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Audio"
+                    android:text="@string/label_audio"
                     android:textColor="@color/txt"
                     android:textSize="15sp" />
 
@@ -302,9 +318,9 @@
                     android:textSize="15sp" />
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginStart="6dp"
                     android:src="@drawable/ic_chevron"
                     android:contentDescription="@null" />
             </LinearLayout>
@@ -314,36 +330,39 @@
             android:id="@+id/tvNote"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
             android:textColor="@color/txtFaint"
             android:textSize="12sp"
-            android:lineSpacingExtra="2dp"
+            android:lineSpacingExtra="3dp"
             android:visibility="gone" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:layout_marginBottom="8dp"
-            android:text="Kontrol"
+            android:layout_marginTop="36dp"
+            android:layout_marginBottom="10dp"
+            android:text="@string/section_controls"
             android:textColor="@color/txtFaint"
-            android:textSize="13sp" />
+            android:textSize="12sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card"
             android:orientation="vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp">
+            android:padding="6dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp">
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="13dp"
+                android:paddingBottom="13dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -355,15 +374,15 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Izinkan tampil di aplikasi lain"
+                        android:text="@string/label_floating"
                         android:textColor="@color/txt"
                         android:textSize="15sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Tombol rekam tetap ada di luar Zrec"
+                        android:layout_marginTop="3dp"
+                        android:text="@string/hint_floating"
                         android:textColor="@color/txtFaint"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -377,6 +396,8 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="14dp"
                 android:background="@color/line" />
 
             <LinearLayout
@@ -384,8 +405,10 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp">
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="13dp"
+                android:paddingBottom="13dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -397,15 +420,15 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Sembunyikan saat merekam"
+                        android:text="@string/label_hide"
                         android:textColor="@color/txt"
                         android:textSize="15sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Hasil rekaman tanpa tombol"
+                        android:layout_marginTop="3dp"
+                        android:text="@string/hint_hide"
                         android:textColor="@color/txtFaint"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -419,6 +442,8 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="14dp"
                 android:background="@color/line" />
 
             <LinearLayout
@@ -426,8 +451,10 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp">
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="13dp"
+                android:paddingBottom="13dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -439,15 +466,15 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Stop dengan guncangan"
+                        android:text="@string/label_shake"
                         android:textColor="@color/txt"
                         android:textSize="15sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Goyang dua kali saat merekam"
+                        android:layout_marginTop="3dp"
+                        android:text="@string/hint_shake"
                         android:textColor="@color/txtFaint"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -461,6 +488,8 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="14dp"
                 android:background="@color/line" />
 
             <LinearLayout
@@ -468,8 +497,10 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp">
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="13dp"
+                android:paddingBottom="13dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -481,15 +512,15 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Hitung mundur"
+                        android:text="@string/label_countdown"
                         android:textColor="@color/txt"
                         android:textSize="15sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Mulai setelah 3 detik"
+                        android:layout_marginTop="3dp"
+                        android:text="@string/hint_countdown"
                         android:textColor="@color/txtFaint"
                         android:textSize="12sp" />
                 </LinearLayout>

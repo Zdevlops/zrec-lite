@@ -33,8 +33,8 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Zrec ${{ github.ref_name }}
           body: |
-            Zrec ${{ github.ref_name }} - screen recorder Android.
-            Isi rilis: file APK saja, tanpa screenshot dan tanpa rekaman.
+            #1 OpenSource software android by @Zdev
           files: app/build/outputs/apk/release/app-release.apk
+          overwrite_files: true
           draft: false
           prerelease: false

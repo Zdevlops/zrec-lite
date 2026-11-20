@@ -1,40 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-label="Zrec — screen recorder for Android">
-  <rect width="1280" height="400" fill="#0A0A0C"/>
+  <rect width="1280" height="400" fill="#121110"/>
 
   <g font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
-    <text x="64" y="164" font-size="104" font-weight="500" letter-spacing="-3" fill="#F2F2F4">Zrec</text>
-    <text x="66" y="204" font-size="22" fill="#A6A6B0">Screen recorder untuk Android</text>
+    <text x="64" y="164" font-size="104" font-weight="500" letter-spacing="-3" fill="#F4F1EC">Zrec</text>
+    <text x="66" y="204" font-size="22" fill="#A8A29B">Screen recorder for Android</text>
   </g>
 
-  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#7C7C88" font-size="17">
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#8A847A" font-size="17">
     <text x="66" y="262">720p 144 fps</text>
     <text x="66" y="288">1080p 120 fps</text>
     <text x="66" y="314">4K 60 fps</text>
   </g>
 
-  <g>
-    <circle cx="300" cy="255" r="3" fill="#26262C"/>
-    <circle cx="300" cy="281" r="3" fill="#26262C"/>
-    <circle cx="300" cy="307" r="3" fill="#26262C"/>
+  <g fill="#2B2723">
+    <circle cx="300" cy="255" r="3"/>
+    <circle cx="300" cy="281" r="3"/>
+    <circle cx="300" cy="307" r="3"/>
   </g>
 
-  <rect x="892" y="48" width="232" height="304" rx="26" fill="#121215" stroke="#26262C"/>
-  <g font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
-    <text x="916" y="92" font-size="15" font-weight="500" fill="#F2F2F4">Zrec</text>
-  </g>
+  <rect x="892" y="48" width="232" height="304" rx="26" fill="#1B1917"/>
+  <text x="916" y="92" font-size="15" font-weight="500" fill="#F4F1EC"
+        font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">Zrec</text>
   <circle cx="916" cy="120" r="3.5" fill="#E5484D"/>
-  <g font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
-    <text x="928" y="124" font-size="12" fill="#A6A6B0">Merekam</text>
-  </g>
-  <text x="916" y="184" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="46" fill="#F2F2F4" letter-spacing="-1">00:42</text>
+  <text x="928" y="124" font-size="12" fill="#A8A29B"
+        font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">Recording</text>
+  <text x="916" y="184" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        font-size="46" fill="#F4F1EC" letter-spacing="-1">00:42</text>
   <rect x="916" y="206" width="184" height="38" rx="10" fill="#C93C41"/>
-  <text x="1008" y="231" text-anchor="middle" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="500" fill="#F2F2F4">Stop</text>
+  <text x="1008" y="231" text-anchor="middle" font-size="13" font-weight="500" fill="#FFFFFF"
+        font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">Stop</text>
 
-  <line x1="916" y1="268" x2="1100" y2="268" stroke="#26262C"/>
+  <line x1="916" y1="268" x2="1100" y2="268" stroke="#2B2723"/>
   <g font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12">
-    <text x="916" y="294" fill="#F2F2F4">Resolusi</text>
-    <text x="1100" y="294" text-anchor="end" fill="#A6A6B0">1080p</text>
-    <text x="916" y="322" fill="#F2F2F4">Frame rate</text>
-    <text x="1100" y="322" text-anchor="end" fill="#A6A6B0">120 fps</text>
+    <text x="916" y="294" fill="#F4F1EC">Resolution</text>
+    <text x="1100" y="294" text-anchor="end" fill="#A8A29B">1080p</text>
+    <text x="916" y="322" fill="#F4F1EC">Frame rate</text>
+    <text x="1100" y="322" text-anchor="end" fill="#A8A29B">120 fps</text>
   </g>
 </svg>

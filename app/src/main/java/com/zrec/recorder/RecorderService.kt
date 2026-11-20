@@ -81,7 +81,7 @@ class RecorderService : Service(), SensorEventListener {
     }
     private val fatal: (String) -> Unit = { reason ->
         main.post {
-            toast("Rekaman gagal: $reason")
+            toast("Recording failed: $reason")
             finishNow()
         }
     }
@@ -102,7 +102,7 @@ class RecorderService : Service(), SensorEventListener {
         val nm = getSystemService(NotificationManager::class.java)
         if (nm.getNotificationChannel(CHANNEL) == null) {
             nm.createNotificationChannel(
-                NotificationChannel(CHANNEL, "Rekaman", NotificationManager.IMPORTANCE_LOW).apply {
+                NotificationChannel(CHANNEL, "Recording", NotificationManager.IMPORTANCE_LOW).apply {
                     setShowBadge(false)
                 }
             )
@@ -161,7 +161,7 @@ class RecorderService : Service(), SensorEventListener {
         )
 
         // Foreground first: Android 14 refuses a projection created before this.
-        startForegroundCompat(buildNotification("Menyiapkan", "Merekam layar", false))
+        startForegroundCompat(buildNotification("Preparing", "Capturing the screen", false))
 
         val mgr = getSystemService(MediaProjectionManager::class.java)
         val proj = runCatching { mgr.getMediaProjection(resultCode, data) }.getOrNull()
@@ -199,7 +199,7 @@ class RecorderService : Service(), SensorEventListener {
             stopSelf()
             return
         }
-        startForegroundCompat(buildNotification("Screenshot", "Mengambil gambar", false))
+        startForegroundCompat(buildNotification("Screenshot", "Capturing a frame", false))
         val mgr = getSystemService(MediaProjectionManager::class.java)
         val proj = runCatching { mgr.getMediaProjection(resultCode, data) }.getOrNull()
         if (proj == null) {
@@ -215,7 +215,7 @@ class RecorderService : Service(), SensorEventListener {
             intent.getIntExtra(EXTRA_DPI, 420)
         ) { name ->
             main.post {
-                toast(if (name != null) "Screenshot disimpan" else "Screenshot gagal")
+                toast(if (name != null) "Screenshot saved" else "Screenshot failed")
                 runCatching { proj.stop() }
                 projection = null
                 runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
@@ -226,13 +226,13 @@ class RecorderService : Service(), SensorEventListener {
 
     private fun screenshot() {
         val proj = projection ?: run {
-            toast("Belum merekam")
+            toast("Not recording yet")
             return
         }
         val c = cfg ?: return
         Shot.capture(this, proj, c.width, c.height, c.dpi) { name ->
             main.post {
-                toast(if (name != null) "Screenshot disimpan" else "Screenshot gagal")
+                toast(if (name != null) "Screenshot saved" else "Screenshot failed")
             }
         }
     }
@@ -274,7 +274,7 @@ class RecorderService : Service(), SensorEventListener {
 
         peaks = 0
         main.post {
-            toast("Rekaman dihentikan")
+            toast("Recording stopped")
             finishNow()
         }
     }
@@ -306,12 +306,12 @@ class RecorderService : Service(), SensorEventListener {
         if (finishing) return
         val title = when {
             !active -> "Zrec"
-            paused -> "Dijeda"
-            else -> "Merekam"
+            paused -> "Paused"
+            else -> "Recording"
         }
         val body = if (active) {
             String.format(Locale.US, "%d fps  ·  %02d:%02d", lastFps, lastSeconds / 60, lastSeconds % 60)
-        } else "Siap"
+        } else "Ready"
         runCatching {
             getSystemService(NotificationManager::class.java)
                 .notify(NOTIF, buildNotification(title, body, paused))
@@ -341,7 +341,7 @@ class RecorderService : Service(), SensorEventListener {
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .addAction(action(1, "Shot", ACTION_SHOT))
-            .addAction(action(2, if (isPaused) "Lanjut" else "Jeda", if (isPaused) ACTION_RESUME else ACTION_PAUSE))
+            .addAction(action(2, if (isPaused) "Resume" else "Pause", if (isPaused) ACTION_RESUME else ACTION_PAUSE))
             .addAction(action(3, "Stop", ACTION_STOP))
             .build()
     }
