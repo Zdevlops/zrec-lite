@@ -22,13 +22,16 @@ Satu file, tidak ada tambahan lain. Ambil di [Releases](../../releases/latest).
 | Feature | Description |
 |---|---|
 | **Screen recording** | MediaProjection langsung ke hardware encoder, tanpa re-encode |
-| **Floating control** | Bola yang bisa digeser di luar aplikasi: record, stop, pause, screenshot |
+| **Floating control** | Bola yang bisa digeser di luar aplikasi: record, stop, pause, screenshot, dan ganti sumber audio |
 | **Close by drag** | Geser bola ke target di tengah bawah untuk menutupnya, tanpa masuk ke aplikasi |
 | **Hide while recording** | Bola tampil 2,5 detik saat rekaman mulai, lalu hilang supaya video bersih |
 | **Summon by volume** | Tekan volume bawah dua kali untuk memunculkan bola lagi selama 5 detik |
 | **Shake to stop** | Goyang dua kali saat merekam |
 | **Screenshot** | Bisa saat merekam atau tanpa merekam, tersimpan ke `Pictures/Zrec` |
 | **Audio** | Off, Mic, Internal, atau Mic + internal. Kalau sumbernya ditolak HP, rekaman lanjut tanpa suara |
+| **Auto split** | Rekaman dipecah otomatis tiap 5 menit di titik keyframe, jadi satu file bermasalah cuma menghilangkan satu potongan |
+| **Quick Settings tile** | Tile di panel pengaturan cepat: tap saat merekam untuk stop, tap saat idle untuk membuka aplikasi |
+| **Recent recordings** | Lima rekaman terakhir tampil di tab Record, tap untuk memutar. Setelah stop, notifikasi juga bisa membuka filenya |
 | **Rotation handling** | Android 14+ hanya mengizinkan satu sesi tangkap per izin layar, jadi rekaman tetap hidup dengan orientasi awal saat ponsel diputar |
 | **Honest options** | Resolusi dan frame rate difilter dari kemampuan encoder HP, bukan daftar karangan |
 
@@ -74,7 +77,7 @@ Rilis terakhir:
 
 | File | Ukuran | Build | SHA-256 |
 |---|---|---|---|
-| `app-release.apk` | 87.801 byte | 8 | `0469d56db9d08aeadbae2b3d0fee3ae527d69d4176d8424ffc8d94aab7d864ac` |
+| `app-release.apk` | - | 9 | - |
 
 File `.sha256` juga ikut diunggah di setiap release, isinya satu baris siap dipakai `sha256sum -c`.
 
@@ -100,8 +103,9 @@ Repo ini juga punya GitHub Actions: setiap push ke `main` menghasilkan APK sebag
 app/src/main/java/com/zrec/recorder/
   MainActivity.kt      layar utama dan pengaturan
   RecorderService.kt   foreground service, notifikasi, guncangan, rotasi
-  ScreenRecorder.kt    MediaCodec + MediaMuxer, audio, jeda
+  ScreenRecorder.kt    MediaCodec + MediaMuxer, audio, jeda, pemecahan per 5 menit
   OverlayService.kt    floating control
+  RecorderTileService.kt  tile pengaturan cepat
   Shot.kt              screenshot sekali jalan
   Caps.kt              pembacaan kemampuan encoder
   Config.kt            preferensi
@@ -109,10 +113,11 @@ app/src/main/java/com/zrec/recorder/
 
 ## Known limits
 
-- Floating control tidak bisa terlihat di layar tapi hilang dari rekaman. Android tidak menyediakan itu. Karena itu bola disembunyikan selama merekam, dan kontrol pindah ke notifikasi.
+- Floating control tidak bisa terlihat di layar tapi hilang dari rekaman dengan sempurna. Bola dan target tutupnya sekarang ditandai `FLAG_SECURE`, jadi tidak ikut terekam, tapi di sebagian HP areanya bisa muncul sebagai kotak hitam kecil. Karena itu bola tetap disembunyikan selama merekam, dan kontrol pindah ke notifikasi.
 - Memanggil bola dengan volume bawah 2x hanya bekerja kalau volume benar-benar turun. Kalau media sudah di angka 0, tidak ada perubahan yang bisa dideteksi. Kontrol rekam tetap ada di notifikasi, dan bola muncul sendiri begitu rekaman selesai.
 - Audio internal bisa kosong di aplikasi yang melarang perekaman suaranya. Ini keputusan aplikasi tersebut, bukan bug Zrec.
-- Kalau "Hide while recording" dimatikan, bola ikut terekam.
+- Ganti sumber audio saat merekam baru berlaku untuk rekaman berikutnya, karena jalur audio dibuka sekali di awal file.
+- Rekaman dipecah tiap 5 menit, jadi rekaman 20 menit menghasilkan empat file, bukan satu file besar.
 - Rotasi di tengah rekaman: di Android 14+ rekaman tetap hidup dengan orientasi awal, karena sistem hanya mengizinkan satu sesi tangkap per izin layar. Di Android 13 ke bawah file dipecah jadi dua.
 
 ## License

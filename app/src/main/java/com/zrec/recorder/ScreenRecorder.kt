@@ -249,13 +249,17 @@ class ScreenRecorder(
      */
     private fun rollSegment(baseUs: Long) {
         val old = muxer ?: return
+        val vf = vFormat
+        if (vf == null) {
+            segmentUs = 0L
+            return
+        }
         val oldUri = uri
         val oldPfd = pfd
-        val vf = vFormat
         val af = aFormat
         val withAudio = aTrack >= 0
 
-        val fresh = if (vf == null) null else runCatching { makeOut() }.getOrNull()
+        val fresh = runCatching { makeOut() }.getOrNull()
         if (fresh == null) {
             segmentUs = 0L
             return
