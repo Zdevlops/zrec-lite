@@ -55,6 +55,7 @@ class OverlayService : Service() {
     private var panel: LinearLayout? = null
     private var btnToggle: ImageButton? = null
     private var btnPause: ImageButton? = null
+    private var btnAudio: ImageButton? = null
     private var dot: View? = null
     private var params: WindowManager.LayoutParams? = null
 
@@ -144,6 +145,7 @@ class OverlayService : Service() {
         panel = v.findViewById(R.id.panel)
         btnToggle = v.findViewById(R.id.btnToggle)
         btnPause = v.findViewById(R.id.btnPause)
+        btnAudio = v.findViewById(R.id.btnAudio)
         dot = v.findViewById(R.id.dot)
 
         val type = if (Build.VERSION.SDK_INT >= 26) {
@@ -156,7 +158,11 @@ class OverlayService : Service() {
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             type,
+            // FLAG_SECURE keeps the bubble and its buttons out of our own screen
+            // capture. Without it the control is recorded whenever it is visible,
+            // which is why the bubble used to hide for the whole take.
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_SECURE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).apply {
@@ -169,6 +175,7 @@ class OverlayService : Service() {
         v.findViewById<ImageButton>(R.id.btnShot).setOnClickListener { shot() }
         btnToggle?.setOnClickListener { toggleRecord() }
         btnPause?.setOnClickListener { togglePause() }
+        btnAudio?.setOnClickListener { cycleAudio() }
         v.findViewById<View>(R.id.bubble).setOnTouchListener { _, e -> drag(e) }
 
         runCatching { wm.addView(v, lp) }
@@ -242,6 +249,7 @@ class OverlayService : Service() {
             type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                WindowManager.LayoutParams.FLAG_SECURE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).apply {
@@ -395,6 +403,36 @@ class OverlayService : Service() {
                     .putExtra(MainActivity.EXTRA_SHOT, true)
             )
         }
+    }
+
+    /**
+     * Steps through the audio sources. Internal capture only exists from Android 10,
+     * so older phones are offered Off and Mic only instead of a choice that would be
+     * silently downgraded at start.
+     */
+    private fun cycleAudio() {
+        val choices = if (Build.VERSION.SDK_INT >= 29) {
+            intArrayOf(Config.AUDIO_OFF, Config.AUDIO_MIC, Config.AUDIO_INTERNAL, Config.AUDIO_BOTH)
+        } else {
+            intArrayOf(Config.AUDIO_OFF, Config.AUDIO_MIC)
+        }
+        val at = choices.indexOf(prefs.audio)
+        val next = choices[if (at < 0) 0 else (at + 1) % choices.size]
+        prefs.audio = next
+        // The audio track is opened once, when the file is created, so a change now
+        // takes effect on the next take. Saying "next recording" beats a silent no-op.
+        val name = audioName(next)
+        toast(
+            if (RecorderService.active) "Audio: $name (next recording)"
+            else "Audio: $name"
+        )
+    }
+
+    private fun audioName(audio: Int): String = when (audio) {
+        Config.AUDIO_OFF -> "Off"
+        Config.AUDIO_MIC -> "Mic"
+        Config.AUDIO_INTERNAL -> "Internal"
+        else -> "Mic + internal"
     }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()

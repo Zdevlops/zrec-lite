@@ -60,4 +60,22 @@ class Prefs(ctx: Context) {
     var shake: Boolean
         get() = sp.getBoolean("shake", true)
         set(v) = sp.edit().putBoolean("shake", v).apply()
+
+    // Update-check cache. Present in both builds so Prefs stays identical, but the
+    // lite build never writes them: it has no network.
+    var lastCheckAt: Long
+        get() = sp.getLong("lastCheckAt", 0L)
+        set(v) = sp.edit().putLong("lastCheckAt", v).apply()
+
+    var cachedCode: Long
+        get() = sp.getLong("cachedCode", 0L)
+        set(v) = sp.edit().putLong("cachedCode", v).apply()
+
+    var cachedName: String
+        get() = sp.getString("cachedName", "") ?: ""
+        set(v) = sp.edit().putString("cachedName", v).apply()
+
+    var cachedUrl: String
+        get() = sp.getString("cachedUrl", "") ?: ""
+        set(v) = sp.edit().putString("cachedUrl", v).apply()
 }

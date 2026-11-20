@@ -45,7 +45,9 @@ class RecorderService : Service(), SensorEventListener {
         const val EXTRA_QUALITY = "quality"
 
         private const val CHANNEL = "zrec"
+        private const val CHANNEL_SAVED = "zrec_saved"
         private const val NOTIF = 71
+        private const val NOTIF_SAVED = 72
 
         /** A shake peak counts above 2.4 g; two peaks inside 1.5 s stop the take. */
         private const val SHAKE_G = 2.4f
@@ -103,6 +105,13 @@ class RecorderService : Service(), SensorEventListener {
         if (nm.getNotificationChannel(CHANNEL) == null) {
             nm.createNotificationChannel(
                 NotificationChannel(CHANNEL, "Recording", NotificationManager.IMPORTANCE_LOW).apply {
+                    setShowBadge(false)
+                }
+            )
+        }
+        if (nm.getNotificationChannel(CHANNEL_SAVED) == null) {
+            nm.createNotificationChannel(
+                NotificationChannel(CHANNEL_SAVED, getString(R.string.saved_channel), NotificationManager.IMPORTANCE_LOW).apply {
                     setShowBadge(false)
                 }
             )
@@ -408,6 +417,9 @@ class RecorderService : Service(), SensorEventListener {
         if (finishing) return
         finishing = true
         stopShake()
+        // Grab the file before the recorder goes away: this is what the saved
+        // notification opens, and it is the only handle the user gets on the take.
+        val saved = recorder?.lastUri
         runCatching { recorder?.stop() }
         recorder = null
         runCatching { projection?.stop() }
@@ -418,8 +430,29 @@ class RecorderService : Service(), SensorEventListener {
         lastSeconds = 0
         onEvent?.invoke()
         runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
+        if (saved != null) notifySaved(saved)
         stopSelf()
         finishing = false
+    }
+
+    /** A dismissible notification that opens the finished file in the player. */
+    private fun notifySaved(u: android.net.Uri) {
+        val open = Intent(Intent.ACTION_VIEW)
+            .setDataAndType(u, "video/mp4")
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        val pi = PendingIntent.getActivity(
+            this, 1, open,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val n = Notification.Builder(this, CHANNEL_SAVED)
+            .setSmallIcon(R.drawable.ic_notif)
+            .setContentTitle(getString(R.string.saved_title))
+            .setContentText(getString(R.string.saved_body))
+            .setContentIntent(pi)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .build()
+        runCatching { getSystemService(NotificationManager::class.java).notify(NOTIF_SAVED, n) }
     }
 
     override fun onDestroy() {

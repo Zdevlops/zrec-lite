@@ -90,5 +90,33 @@
             android:text="@string/record_hint"
             android:textColor="@color/txtFaint"
             android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:layout_marginStart="4dp"
+            android:letterSpacing="0.08"
+            android:text="@string/section_recent"
+            android:textAllCaps="true"
+            android:textColor="@color/txtFaint"
+            android:textSize="10sp" />
+
+        <LinearLayout
+            android:id="@+id/recentBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/tvRecentEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="4dp"
+            android:text="@string/recent_empty"
+            android:textColor="@color/txtFaint"
+            android:textSize="12sp" />
     </LinearLayout>
 </ScrollView>

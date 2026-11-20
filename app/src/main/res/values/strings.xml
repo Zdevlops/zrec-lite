@@ -50,4 +50,13 @@
     <string name="note_internal">Internal audio can be blocked by some apps.</string>
     <string name="note_fps">This device\'s encoder caps at %1$d fps.</string>
     <string name="note_software">No hardware encoder — recording runs on the CPU.</string>
+    <string name="section_recent">Recent recordings</string>
+    <string name="recent_empty">No recordings yet. Press Start recording.</string>
+    <string name="recent_failed">Could not open the video</string>
+    <string name="saved_channel">Saved recordings</string>
+    <string name="saved_title">Recording saved</string>
+    <string name="saved_body">Tap to open the video</string>
+    <string name="tile_label">Zrec recording</string>
+    <string name="tile_stop">Stop recording</string>
+    <string name="tile_start">Start recording</string>
 </resources>

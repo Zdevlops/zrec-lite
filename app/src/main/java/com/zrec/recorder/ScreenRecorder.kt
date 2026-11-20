@@ -37,12 +37,21 @@ class ScreenRecorder(
     private val onStats: (fps: Int, seconds: Long) -> Unit,
     private val onFatal: (String) -> Unit
 ) {
+    private companion object {
+        /** A take rolls to a new file every five minutes, on a keyframe. */
+        const val SEGMENT_US = 5 * 60 * 1_000_000L
+    }
+
     private val lock = Any()
     private val sampleRate = 48_000
 
     private var muxer: MediaMuxer? = null
     private var pfd: ParcelFileDescriptor? = null
     private var uri: Uri? = null
+
+    /** The newest file this take produced. Read by the service after stop. */
+    @Volatile var lastUri: Uri? = null
+        private set
 
     private var videoCodec: MediaCodec? = null
     private var inputSurface: Surface? = null
@@ -64,14 +73,32 @@ class ScreenRecorder(
     @Volatile private var audioOn = false
 
     /** Set in start(); used to stop waiting for an audio track that never arrives. */
-    private var beganNs = 0L
+    @Volatile private var beganNs = 0L
 
-    private var pausedUs = 0L
-    private var pauseStartNs = 0L
+    @Volatile private var pausedUs = 0L
+    @Volatile private var pauseStartNs = 0L
 
-    private var muxStarted = false
+    @Volatile private var muxStarted = false
     private var vTrack = -1
     private var aTrack = -1
+
+    /** Track formats, kept so a new segment can be opened without re-encoding. */
+    private var vFormat: MediaFormat? = null
+    private var aFormat: MediaFormat? = null
+
+    /**
+     * Segments. A long take is one file until this many microseconds have gone by,
+     * then the file is closed and a new one is opened at the next keyframe. One
+     * corrupt or refused file therefore costs a segment, not the whole recording.
+     */
+    @Volatile private var segmentUs = 0L
+
+    /** Raw timestamp the current file starts at, for video and audio separately. */
+    @Volatile private var segBaseUs = 0L
+    @Volatile private var segAudioBaseUs = 0L
+
+    /** Audio frames queued so far, used to place the audio base at a split. */
+    @Volatile private var audioFrames = 0L
 
     /** Read by the stats thread, written by the video thread. */
     @Volatile private var frames = 0L
@@ -85,6 +112,7 @@ class ScreenRecorder(
     fun start() {
         try {
             beganNs = System.nanoTime()
+            segmentUs = SEGMENT_US
             openOutput()
             startVideo()
             if (cfg.audio != Config.AUDIO_OFF) {
@@ -169,7 +197,10 @@ class ScreenRecorder(
 
     // ---------- output ----------
 
-    private fun openOutput() {
+    private class Out(val uri: Uri, val pfd: ParcelFileDescriptor, val muxer: MediaMuxer)
+
+    /** Creates one MediaStore video plus a muxer on it, without touching live state. */
+    private fun makeOut(): Out {
         val name = "Zrec_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".mp4"
         val values = ContentValues().apply {
             put(MediaStore.Video.Media.DISPLAY_NAME, name)
@@ -179,15 +210,23 @@ class ScreenRecorder(
                 put(MediaStore.Video.Media.IS_PENDING, 1)
             }
         }
-        uri = ctx.contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
+        val u = ctx.contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
             ?: throw IllegalStateException("Tidak bisa membuat file di galeri")
-        pfd = ctx.contentResolver.openFileDescriptor(uri!!, "rw")
+        val d = ctx.contentResolver.openFileDescriptor(u, "rw")
             ?: throw IllegalStateException("Tidak bisa membuka file")
-        muxer = MediaMuxer(pfd!!.fileDescriptor, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+        return Out(u, d, MediaMuxer(d.fileDescriptor, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4))
     }
 
-    private fun finalizeOutput(ok: Boolean) {
-        val u = uri ?: return
+    private fun openOutput() {
+        val o = makeOut()
+        uri = o.uri
+        pfd = o.pfd
+        muxer = o.muxer
+        lastUri = o.uri
+    }
+
+    private fun finalizeUri(u: Uri?, ok: Boolean) {
+        if (u == null) return
         runCatching {
             if (ok) {
                 if (Build.VERSION.SDK_INT >= 29) {
@@ -199,6 +238,60 @@ class ScreenRecorder(
                 ctx.contentResolver.delete(u, null, null)
             }
         }
+    }
+
+    private fun finalizeOutput(ok: Boolean) = finalizeUri(uri, ok)
+
+    /**
+     * Closes the current file and opens the next one starting at [baseUs]. Called with
+     * [lock] held. If the new file cannot be opened the old one keeps being written
+     * and splitting is turned off: losing a boundary beats losing the recording.
+     */
+    private fun rollSegment(baseUs: Long) {
+        val old = muxer ?: return
+        val oldUri = uri
+        val oldPfd = pfd
+        val vf = vFormat
+        val af = aFormat
+        val withAudio = aTrack >= 0
+
+        val fresh = if (vf == null) null else runCatching { makeOut() }.getOrNull()
+        if (fresh == null) {
+            segmentUs = 0L
+            return
+        }
+
+        val started = runCatching {
+            val vt = fresh.muxer.addTrack(vf)
+            val at = if (withAudio && af != null) fresh.muxer.addTrack(af) else -1
+            fresh.muxer.start()
+            vTrack = vt
+            aTrack = at
+            if (withAudio && at < 0) audioOn = false
+            true
+        }.getOrDefault(false)
+
+        if (!started) {
+            runCatching { fresh.muxer.release() }
+            runCatching { fresh.pfd.close() }
+            finalizeUri(fresh.uri, false)
+            segmentUs = 0L
+            return
+        }
+
+        muxer = fresh.muxer
+        uri = fresh.uri
+        pfd = fresh.pfd
+        lastUri = fresh.uri
+        muxStarted = true
+
+        runCatching { old.stop() }
+        runCatching { old.release() }
+        runCatching { oldPfd?.close() }
+        finalizeUri(oldUri, true)
+
+        segBaseUs = baseUs
+        segAudioBaseUs = audioFrames * 1_000_000L / sampleRate
     }
 
     // ---------- video ----------
@@ -252,6 +345,7 @@ class ScreenRecorder(
             }
             when {
                 idx == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> synchronized(lock) {
+                    vFormat = codec.outputFormat
                     if (muxer != null) vTrack = muxer!!.addTrack(codec.outputFormat)
                     maybeStartMuxer()
                 }
@@ -263,9 +357,16 @@ class ScreenRecorder(
                     if (buf != null && info.size > 0 && !config && !paused) {
                         buf.position(info.offset)
                         buf.limit(info.offset + info.size)
-                        info.presentationTimeUs = (info.presentationTimeUs - pausedUs).coerceAtLeast(0)
+                        val pts = (info.presentationTimeUs - pausedUs).coerceAtLeast(0)
+                        // Split on a keyframe, so the next file opens with a clean GOP
+                        // instead of waiting for the encoder's next one.
+                        val key = info.flags and MediaCodec.BUFFER_FLAG_KEY_FRAME != 0
                         synchronized(lock) {
+                            if (segmentUs > 0 && muxStarted && key && pts - segBaseUs >= segmentUs) {
+                                rollSegment(pts)
+                            }
                             if (muxStarted && vTrack >= 0) {
+                                info.presentationTimeUs = (pts - segBaseUs).coerceAtLeast(0)
                                 runCatching { muxer!!.writeSampleData(vTrack, buf, info) }
                                 frames++
                             }
@@ -303,13 +404,7 @@ class ScreenRecorder(
         ).coerceAtLeast(8192) * 2
 
         if (cfg.audio == Config.AUDIO_MIC || cfg.audio == Config.AUDIO_BOTH) {
-            mic = runCatching {
-                AudioRecord.Builder()
-                    .setAudioSource(MediaRecorder.AudioSource.MIC)
-                    .setAudioFormat(mono)
-                    .setBufferSizeInBytes(bufBytes)
-                    .build()
-            }.getOrNull()
+            mic = openMic(mono, bufBytes)
         }
         if (cfg.audio == Config.AUDIO_INTERNAL || cfg.audio == Config.AUDIO_BOTH) {
             internalRec = runCatching {
@@ -352,6 +447,34 @@ class ScreenRecorder(
         return true
     }
 
+    /**
+     * Opens the microphone without the phone's speech processing.
+     *
+     * AudioSource.MIC turns on automatic gain control and noise suppression, which
+     * pumps the voice level and lifts room hiss. UNPROCESSED is the raw capsule;
+     * VOICE_RECOGNITION is the next best thing when a vendor refuses it. MIC stays
+     * as the last resort rather than failing the take.
+     */
+    private fun openMic(format: AudioFormat, buffer: Int): AudioRecord? {
+        val sources = intArrayOf(
+            MediaRecorder.AudioSource.UNPROCESSED,
+            MediaRecorder.AudioSource.VOICE_RECOGNITION,
+            MediaRecorder.AudioSource.MIC
+        )
+        for (src in sources) {
+            val r = runCatching {
+                AudioRecord.Builder()
+                    .setAudioSource(src)
+                    .setAudioFormat(format)
+                    .setBufferSizeInBytes(buffer)
+                    .build()
+            }.getOrNull()
+            if (r != null && r.state == AudioRecord.STATE_INITIALIZED) return r
+            runCatching { r?.release() }
+        }
+        return null
+    }
+
     private fun audioLoop() {
         val codec = audioCodec ?: return
         val framesPerBuf = 1024
@@ -361,12 +484,21 @@ class ScreenRecorder(
         // Allocated once: this loop runs about 47 times a second.
         val bytes = ByteArray(framesPerBuf * 4)
         val info = MediaCodec.BufferInfo()
-        var totalFrames = 0L
+        var wasPaused = false
 
         while (looping) {
             if (paused) {
+                wasPaused = true
                 Thread.sleep(25)
                 continue
+            }
+            if (wasPaused) {
+                // The recorders kept filling their buffers while nothing was read, so
+                // the first read after a pause returned sound from the pause itself.
+                // Stopping and restarting drops that buffer.
+                wasPaused = false
+                runCatching { mic?.stop(); mic?.startRecording() }
+                runCatching { internalRec?.stop(); internalRec?.startRecording() }
             }
             val micN = try { mic?.read(micBuf, 0, framesPerBuf, AudioRecord.READ_BLOCKING) ?: 0 } catch (_: Throwable) { 0 }
             val capN = try { internalRec?.read(capBuf, 0, framesPerBuf * 2, AudioRecord.READ_BLOCKING) ?: 0 } catch (_: Throwable) { 0 }
@@ -377,10 +509,16 @@ class ScreenRecorder(
             val n = maxOf(if (micN > 0) micN else 0, if (capN > 0) capN / 2 else 0)
             if (n <= 0) continue
 
+            // Gain staging. Summed 1:1 the game track buries the voice and the sum
+            // clips, so when both sources are live the game is pulled down and the
+            // microphone lifted. A single source is left at its own level.
+            val both = micN > 0 && capN > 0
+            val micGain = if (both) 140 else 100
+            val capGain = if (both) 70 else 100
             for (k in 0 until n) {
-                val m = if (micN > k) micBuf[k].toInt() else 0
-                val l = if (capN > 2 * k) capBuf[2 * k].toInt() else 0
-                val r = if (capN > 2 * k + 1) capBuf[2 * k + 1].toInt() else 0
+                val m = if (micN > k) micBuf[k].toInt() * micGain / 100 else 0
+                val l = if (capN > 2 * k) capBuf[2 * k].toInt() * capGain / 100 else 0
+                val r = if (capN > 2 * k + 1) capBuf[2 * k + 1].toInt() * capGain / 100 else 0
                 mixBuf[2 * k] = clamp(m + l)
                 mixBuf[2 * k + 1] = clamp(m + r)
             }
@@ -397,9 +535,9 @@ class ScreenRecorder(
                 val inBuf = codec.getInputBuffer(inIdx) ?: continue
                 inBuf.clear()
                 inBuf.put(bytes, 0, n * 4)
-                val ptsUs = totalFrames * 1_000_000L / sampleRate
+                val ptsUs = audioFrames * 1_000_000L / sampleRate
                 codec.queueInputBuffer(inIdx, 0, n * 4, ptsUs, 0)
-                totalFrames += n
+                audioFrames += n
             }
             drainAudio(codec, info)
         }
@@ -410,6 +548,7 @@ class ScreenRecorder(
             val outIdx = try { codec.dequeueOutputBuffer(info, 0) } catch (_: Throwable) { return }
             if (outIdx == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 synchronized(lock) {
+                    aFormat = codec.outputFormat
                     // Adding a track to an already started muxer throws, and by then the
                     // take is being written video-only.
                     if (muxer != null && !muxStarted && audioOn) {
@@ -427,6 +566,9 @@ class ScreenRecorder(
                 buf.limit(info.offset + info.size)
                 synchronized(lock) {
                     if (muxStarted && aTrack >= 0) {
+                        // Each file starts at zero, so the audio base moves with the split.
+                        info.presentationTimeUs =
+                            (info.presentationTimeUs - segAudioBaseUs).coerceAtLeast(0)
                         runCatching { muxer!!.writeSampleData(aTrack, buf, info) }
                     }
                 }
