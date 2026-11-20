@@ -309,28 +309,6 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        if (awaitingInstallPermission) {
-            awaitingInstallPermission = false
-            if (packageManager.canRequestPackageInstalls()) installUpdate()
-        }
-        confirmUpdateInstalled()
-        RecorderService.onEvent = { runOnUiThread { refreshUi() } }
-        // Dragging the bubble onto the close target clears the preference, so sync
-        // the switch first. Reading the stale switch here used to bring it back.
-        if (prefs.overlay && !hasOverlayPermission()) prefs.overlay = false
-        syncOverlaySwitch()
-        if (swOverlay.isChecked) startOverlay()
-        refreshUi()
-        buildRecent()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        RecorderService.onEvent = null
-    }
-
-    override fun onResume() {
-        super.onResume()
         RecorderService.onEvent = { runOnUiThread { refreshUi() } }
         // Dragging the bubble onto the close target clears the preference, so sync
         // the switch first. Reading the stale switch here used to bring it back.
