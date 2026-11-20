@@ -54,7 +54,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Zrec ${{ github.ref_name }}
           body: |
-            #1 OpenSource software android by \@Zdev
+            #1 OpenSource software android by \@Zdevlops
           files: app/build/outputs/apk/release/app-release.apk
           overwrite_files: true
           draft: false
