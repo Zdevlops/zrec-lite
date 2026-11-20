@@ -38,6 +38,8 @@ class OverlayService : Service() {
         const val ACTION_PEEK = "com.zrec.OVERLAY_PEEK"
         /** Berapa lama bola kelihatan setelah dipanggil, dalam milidetik. */
         private const val PEEK_MS = 5000L
+        /** Tampil sebentar begitu rekaman mulai, biar ketahuan bolanya ada. */
+        private const val AUTO_PEEK_MS = 2500L
         /** Dua penurunan volume dalam rentang ini dianggap "tekan volume bawah 2x". */
         private const val VOL_GAP_MS = 900L
         /** Diameter jendela target close, dalam dp. */
@@ -74,8 +76,15 @@ class OverlayService : Service() {
     private var dragged = false
     private var expanded = false
 
+    /** Set by the sync loop when a take starts, so the bubble shows itself once. */
+    private var wasRecording = false
+
     private val sync = object : Runnable {
         override fun run() {
+            val recording = RecorderService.active
+            // A take that just started shows the bubble briefly, then it hides again.
+            if (recording && !wasRecording) peek(AUTO_PEEK_MS)
+            wasRecording = recording
             refresh()
             handler.postDelayed(this, 600)
         }
@@ -342,11 +351,11 @@ class OverlayService : Service() {
 
     private fun peeking(): Boolean = SystemClock.elapsedRealtime() < peekUntil
 
-    /** Show the bubble for PEEK_MS even though the recording is hiding it. */
-    private fun peek() {
+    /** Show the bubble for [ms] even though the recording is hiding it. */
+    private fun peek(ms: Long = PEEK_MS) {
         // Someone who closed the control on purpose does not get it back.
         if (root == null || !prefs.overlay) return
-        peekUntil = SystemClock.elapsedRealtime() + PEEK_MS
+        peekUntil = SystemClock.elapsedRealtime() + ms
         refresh()
     }
 
