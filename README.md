@@ -77,7 +77,7 @@ Rilis terakhir:
 
 | File | Ukuran | Build | SHA-256 |
 |---|---|---|---|
-| `app-release.apk` | - | 9 | - |
+| `app-release.apk` | 93.297 byte | 9 | `478e91313f1dcca7557f88a50c8c54a9df907e63d290507ea67e0e3bb85fa780` |
 
 File `.sha256` juga ikut diunggah di setiap release, isinya satu baris siap dipakai `sha256sum -c`.
 
