@@ -48,14 +48,31 @@ jobs:
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | tail -1)
           "$APKSIGNER" verify --print-certs "$APK"
 
+      - name: Checksum the APK
+        run: |
+          cd app/build/outputs/apk/release
+          sha256sum app-release.apk > app-release.apk.sha256
+          echo "SHA256=$(cut -d' ' -f1 app-release.apk.sha256)" >> "$GITHUB_ENV"
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: Zrec ${{ github.ref_name }}
+          name: Zrec Lite ${{ github.ref_name }}
           body: |
             #1 OpenSource software android by \@Zdevlops
-          files: app/build/outputs/apk/release/app-release.apk
+
+            **SHA-256** `app-release.apk`
+
+            ```
+            ${{ env.SHA256 }}
+            ```
+
+            Cek di HP sebelum pasang: `sha256sum app-release.apk` (Termux) atau
+            `Get-FileHash app-release.apk -Algorithm SHA256` (Windows).
+          files: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/release/app-release.apk.sha256
           overwrite_files: true
           draft: false
           prerelease: false

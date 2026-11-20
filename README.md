@@ -1,8 +1,8 @@
 <img src="docs/banner.svg" alt="Zrec — screen recorder for Android" width="100%">
 
 <p align="center">
-  <a href="https://github.com/pancasilayangpertama-maker/zrec-lite/releases/latest">
-    <img alt="Download APK" src="https://img.shields.io/github/v/release/pancasilayangpertama-maker/zrec-lite?style=for-the-badge&label=Download%20APK&color=F4F1EC&labelColor=121110">
+  <a href="https://github.com/Zdevlops/zrec-lite/releases/latest">
+    <img alt="Download APK" src="https://img.shields.io/github/v/release/Zdevlops/zrec-lite?style=for-the-badge&label=Download%20APK&color=F4F1EC&labelColor=121110">
   </a>
 </p>
 
@@ -11,7 +11,7 @@ Screen recorder Android tanpa iklan, tanpa watermark, dan tanpa akun. Dibuat nat
 Satu file, tidak ada tambahan lain. Ambil di [Releases](../../releases/latest).
 
 > [!NOTE]
-> Ini **Zrec lite**: tanpa izin jaringan, jadi tidak bisa memeriksa pembaruan sendiri. Kalau mau yang bisa update otomatis dari dalam aplikasi, pakai [Zrec](https://github.com/pancasilayangpertama-maker/zrec).
+> Ini **Zrec lite**: tanpa izin jaringan, jadi tidak bisa memeriksa pembaruan sendiri. Kalau mau yang bisa update otomatis dari dalam aplikasi, pakai [Zrec](https://github.com/Zdevlops/zrec).
 
 > [!WARNING]
 > **MAKS FPS TETAP BERGANTUNG KEMAMPUAN ASLI DEVICE.**
@@ -54,12 +54,34 @@ Resolusi terendah 720p. Di bawah itu teks di layar berhenti terbaca setelah diko
 
 Tidak ada akses jaringan. Aplikasi ini tidak mengirim apa pun ke mana pun.
 
+## Verifikasi unduhan
+
+Setiap APK punya SHA-256 yang dicantumkan di halaman release. Cocokkan sebelum memasang:
+
+```powershell
+# Windows
+Get-FileHash app-release.apk -Algorithm SHA256
+```
+
+```bash
+# Termux / Linux
+sha256sum app-release.apk
+```
+
+Rilis terakhir:
+
+| File | Ukuran | SHA-256 |
+|---|---|---|
+| `app-release.apk` | 71.721 byte | `f793715286a5ec753fbc67c5ac28a136f86210a899a22baa73c1b69081adf174` |
+
+File `.sha256` juga ikut diunggah di setiap release, isinya satu baris siap dipakai `sha256sum -c`.
+
 ## Build
 
 Butuh JDK 17 dan Android SDK. Tidak perlu Android Studio.
 
 ```bash
-git clone https://github.com/pancasilayangpertama-maker/zrec-lite.git
+git clone https://github.com/Zdevlops/zrec-lite.git
 cd zrec-lite
 gradle assembleRelease
 ```
