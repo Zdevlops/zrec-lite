@@ -1,14 +1,17 @@
 <img src="docs/banner.svg" alt="Zrec — screen recorder for Android" width="100%">
 
 <p align="center">
-  <a href="https://github.com/pancasilayangpertama-maker/zrec/releases/latest">
-    <img alt="Download APK" src="https://img.shields.io/github/v/release/pancasilayangpertama-maker/zrec?style=for-the-badge&label=Download%20APK&color=F4F1EC&labelColor=121110">
+  <a href="https://github.com/pancasilayangpertama-maker/zrec-lite/releases/latest">
+    <img alt="Download APK" src="https://img.shields.io/github/v/release/pancasilayangpertama-maker/zrec-lite?style=for-the-badge&label=Download%20APK&color=F4F1EC&labelColor=121110">
   </a>
 </p>
 
 Screen recorder Android tanpa iklan, tanpa watermark, dan tanpa akun. Dibuat native dengan Kotlin dan framework Android saja, jadi APK-nya di bawah 100 KB.
 
 Satu file, tidak ada tambahan lain. Ambil di [Releases](../../releases/latest).
+
+> [!NOTE]
+> Ini **Zrec lite**: tanpa izin jaringan, jadi tidak bisa memeriksa pembaruan sendiri. Kalau mau yang bisa update otomatis dari dalam aplikasi, pakai [Zrec](https://github.com/pancasilayangpertama-maker/zrec).
 
 > [!WARNING]
 > **MAKS FPS TETAP BERGANTUNG KEMAMPUAN ASLI DEVICE.**
@@ -56,8 +59,8 @@ Tidak ada akses jaringan. Aplikasi ini tidak mengirim apa pun ke mana pun.
 Butuh JDK 17 dan Android SDK. Tidak perlu Android Studio.
 
 ```bash
-git clone https://github.com/pancasilayangpertama-maker/zrec.git
-cd zrec
+git clone https://github.com/pancasilayangpertama-maker/zrec-lite.git
+cd zrec-lite
 gradle assembleRelease
 ```
 
