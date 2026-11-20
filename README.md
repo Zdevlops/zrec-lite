@@ -28,8 +28,8 @@ Satu file, tidak ada tambahan lain. Ambil di [Releases](../../releases/latest).
 | **Summon by volume** | Tekan volume bawah dua kali untuk memunculkan bola lagi selama 5 detik |
 | **Shake to stop** | Goyang dua kali saat merekam |
 | **Screenshot** | Bisa saat merekam atau tanpa merekam, tersimpan ke `Pictures/Zrec` |
-| **Audio** | Off, Mic, Internal, atau Mic + internal |
-| **Rotation handling** | Rekaman dipecah ke file baru saat layar diputar, jadi tidak ada video miring |
+| **Audio** | Off, Mic, Internal, atau Mic + internal. Kalau sumbernya ditolak HP, rekaman lanjut tanpa suara |
+| **Rotation handling** | Android 14+ hanya mengizinkan satu sesi tangkap per izin layar, jadi rekaman tetap hidup dengan orientasi awal saat ponsel diputar |
 | **Honest options** | Resolusi dan frame rate difilter dari kemampuan encoder HP, bukan daftar karangan |
 
 Hasil rekaman masuk ke `Movies/Zrec`, screenshot ke `Pictures/Zrec`.
@@ -72,9 +72,9 @@ sha256sum app-release.apk
 
 Rilis terakhir:
 
-| File | Ukuran | SHA-256 |
-|---|---|---|
-| `app-release.apk` | 75.905 byte | `8c435da356fcc99863f7e5a2f94bf0b61011a0db299db7543951c5da9dca333e` |
+| File | Ukuran | Build | SHA-256 |
+|---|---|---|---|
+| `app-release.apk` | 87.801 byte | 8 | `0469d56db9d08aeadbae2b3d0fee3ae527d69d4176d8424ffc8d94aab7d864ac` |
 
 File `.sha256` juga ikut diunggah di setiap release, isinya satu baris siap dipakai `sha256sum -c`.
 
@@ -113,7 +113,7 @@ app/src/main/java/com/zrec/recorder/
 - Memanggil bola dengan volume bawah 2x hanya bekerja kalau volume benar-benar turun. Kalau media sudah di angka 0, tidak ada perubahan yang bisa dideteksi. Kontrol rekam tetap ada di notifikasi, dan bola muncul sendiri begitu rekaman selesai.
 - Audio internal bisa kosong di aplikasi yang melarang perekaman suaranya. Ini keputusan aplikasi tersebut, bukan bug Zrec.
 - Kalau "Hide while recording" dimatikan, bola ikut terekam.
-- Rotasi di tengah rekaman menghasilkan dua file, bukan satu file yang berputar.
+- Rotasi di tengah rekaman: di Android 14+ rekaman tetap hidup dengan orientasi awal, karena sistem hanya mengizinkan satu sesi tangkap per izin layar. Di Android 13 ke bawah file dipecah jadi dua.
 
 ## License
 
