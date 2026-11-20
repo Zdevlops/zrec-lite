@@ -18,6 +18,9 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.Display
 import android.widget.Toast
 import java.util.Locale
@@ -305,8 +308,27 @@ class RecorderService : Service(), SensorEventListener {
 
         peaks = 0
         main.post {
+            buzz()
             toast("Recording stopped")
             finishNow()
+        }
+    }
+
+    /**
+     * A short double pulse, felt through a case without sounding like a ringer.
+     * It runs on the main thread right as the shake is accepted, so the phone
+     * answers even when the toast is covered by the recorder.
+     */
+    private fun buzz() {
+        val v: Vibrator? = if (Build.VERSION.SDK_INT >= 31) {
+            getSystemService(VibratorManager::class.java)?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Vibrator::class.java)
+        }
+        if (v == null || !v.hasVibrator()) return
+        runCatching {
+            v.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 40, 60, 40), -1))
         }
     }
 
@@ -388,7 +410,7 @@ class RecorderService : Service(), SensorEventListener {
             )
         ).build()
 
-        return Notification.Builder(this, CHANNEL)
+        val builder = Notification.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_notif)
             .setContentTitle(title)
             .setContentText(body)
@@ -400,7 +422,22 @@ class RecorderService : Service(), SensorEventListener {
             .addAction(action(1, "Shot", ACTION_SHOT))
             .addAction(action(2, if (isPaused) "Resume" else "Pause", if (isPaused) ACTION_RESUME else ACTION_PAUSE))
             .addAction(action(3, "Stop", ACTION_STOP))
-            .build()
+
+        // The volume-down shortcut is a convenience; this is the path that always
+        // works, even when the keys move a stream the phone will not report.
+        if (hint != null) {
+            builder.addAction(
+                Notification.Action.Builder(
+                    null, getString(R.string.notif_show_control),
+                    PendingIntent.getService(
+                        this, 4,
+                        Intent(this, OverlayService::class.java).setAction(OverlayService.ACTION_PEEK),
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                ).build()
+            )
+        }
+        return builder.build()
     }
 
     private fun startForegroundCompat(n: Notification) {

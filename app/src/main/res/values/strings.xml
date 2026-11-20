@@ -57,6 +57,7 @@
     <string name="saved_title">Recording saved</string>
     <string name="saved_body">Tap to open the video</string>
     <string name="tile_label">Zrec recording</string>
+    <string name="notif_show_control">Show control</string>
     <string name="tile_stop">Stop recording</string>
     <string name="tile_start">Start recording</string>
 </resources>

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.database.ContentObserver
 import android.graphics.PixelFormat
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -66,8 +67,24 @@ class OverlayService : Service() {
 
     /** Wall clock until which the bubble stays visible while a recording hides it. */
     private var peekUntil = 0L
-    private var lastVolume = -1
-    private var lastVolDownAt = 0L
+
+    /**
+     * Last level of every stream a volume key can move. The active stream is not
+     * always music - with nothing playing the keys move the ringer - so watching
+     * only STREAM_MUSIC missed most presses.
+     */
+    private val volStreams = intArrayOf(
+        AudioManager.STREAM_MUSIC,
+        AudioManager.STREAM_RING,
+        AudioManager.STREAM_NOTIFICATION,
+        AudioManager.STREAM_ALARM,
+        AudioManager.STREAM_SYSTEM
+    )
+    private val lastVol = HashMap<Int, Int>()
+
+    /** Steps dropped inside one gesture, and when that gesture started. */
+    private var dropSum = 0
+    private var dropSince = 0L
 
     private val handler = Handler(Looper.getMainLooper())
     private var downX = 0f
@@ -91,20 +108,34 @@ class OverlayService : Service() {
         }
     }
 
-    /** Two volume-down presses inside this window call the bubble back. */
+    /**
+     * Two volume-down presses inside this window call the bubble back.
+     *
+     * Both presses are counted by how far a stream fell, not by how many callbacks
+     * arrived: the settings provider coalesces two quick changes into one callback,
+     * which is why the old "two callbacks" test never fired on a fast double tap.
+     */
     private val volObserver = object : ContentObserver(handler) {
-        override fun onChange(selfChange: Boolean) {
+        override fun onChange(selfChange: Boolean, uri: Uri?) {
             val am = getSystemService(AudioManager::class.java) ?: return
-            val v = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-            val wentDown = lastVolume >= 0 && v < lastVolume
-            lastVolume = v
-            if (!wentDown) return
+            var dropped = 0
+            for (s in volStreams) {
+                val v = runCatching { am.getStreamVolume(s) }.getOrDefault(-1)
+                if (v < 0) continue
+                val prev = lastVol[s]
+                if (prev != null && v < prev) dropped += prev - v
+                lastVol[s] = v
+            }
+            if (dropped == 0) return
             val now = SystemClock.elapsedRealtime()
-            if (now - lastVolDownAt <= VOL_GAP_MS) {
-                lastVolDownAt = 0L
+            if (now - dropSince > VOL_GAP_MS) {
+                dropSince = now
+                dropSum = 0
+            }
+            dropSum += dropped
+            if (dropSum >= 2) {
+                dropSum = 0
                 peek()
-            } else {
-                lastVolDownAt = now
             }
         }
     }
@@ -118,8 +149,12 @@ class OverlayService : Service() {
         addBubble()
         running = true
         handler.post(sync)
-        lastVolume = (getSystemService(AudioManager::class.java))
-            ?.getStreamVolume(AudioManager.STREAM_MUSIC) ?: -1
+        val am = getSystemService(AudioManager::class.java)
+        if (am != null) {
+            for (s in volStreams) {
+                runCatching { am.getStreamVolume(s) }.getOrNull()?.let { lastVol[s] = it }
+            }
+        }
         runCatching {
             contentResolver.registerContentObserver(Settings.System.CONTENT_URI, true, volObserver)
         }
