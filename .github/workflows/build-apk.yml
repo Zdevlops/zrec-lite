@@ -20,8 +20,29 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Restore signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::KEYSTORE_BASE64 secret is missing"
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/zrec-release.jks"
+
       - name: Build release APK
+        env:
+          ZREC_KEYSTORE: ${{ runner.temp }}/zrec-release.jks
+          ZREC_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          ZREC_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          ZREC_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Verify the APK is signed
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | tail -1)
+          "$APKSIGNER" verify --print-certs "$APK"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

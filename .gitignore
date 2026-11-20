@@ -6,3 +6,8 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
+
+# Signing material never goes in the repo.
+*.jks
+*.keystore
+release.jks

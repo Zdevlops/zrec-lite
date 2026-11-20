@@ -11,16 +11,22 @@ android {
         applicationId = "com.zrec.recorder"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
+        versionCode = 6
         versionName = "1.0.0"
     }
 
     signingConfigs {
+        // The keystore is never committed. CI decodes it from a secret and
+        // points ZREC_KEYSTORE at the file. A local build without these
+        // variables produces an unsigned APK on purpose.
         create("release") {
-            storeFile = file("zrec.keystore")
-            storePassword = "zrec2026"
-            keyAlias = "zrec"
-            keyPassword = "zrec2026"
+            val ksPath = System.getenv("ZREC_KEYSTORE")
+            if (!ksPath.isNullOrBlank() && file(ksPath).exists()) {
+                storeFile = file(ksPath)
+                storePassword = System.getenv("ZREC_STORE_PASSWORD")
+                keyAlias = System.getenv("ZREC_KEY_ALIAS") ?: "zrec"
+                keyPassword = System.getenv("ZREC_KEY_PASSWORD")
+            }
         }
     }
 
@@ -28,7 +34,9 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("release")
+            if (signingConfigs.getByName("release").storeFile != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
