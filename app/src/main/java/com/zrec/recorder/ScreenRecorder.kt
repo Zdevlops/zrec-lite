@@ -66,7 +66,9 @@ class ScreenRecorder(
     private var muxStarted = false
     private var vTrack = -1
     private var aTrack = -1
-    private var frames = 0L
+
+    /** Read by the stats thread, written by the video thread. */
+    @Volatile private var frames = 0L
 
     val isRunning: Boolean get() = looping
     val isPaused: Boolean get() = paused
@@ -293,6 +295,8 @@ class ScreenRecorder(
         val micBuf = ShortArray(framesPerBuf)
         val capBuf = ShortArray(framesPerBuf * 2)
         val mixBuf = ShortArray(framesPerBuf * 2)
+        // Allocated once: this loop runs about 47 times a second.
+        val bytes = ByteArray(framesPerBuf * 4)
         val info = MediaCodec.BufferInfo()
         var totalFrames = 0L
 
@@ -318,7 +322,6 @@ class ScreenRecorder(
                 mixBuf[2 * k + 1] = clamp(m + r)
             }
 
-            val bytes = ByteArray(n * 4)
             var bi = 0
             for (k in 0 until n * 2) {
                 val s = mixBuf[k].toInt()
@@ -330,9 +333,9 @@ class ScreenRecorder(
             if (inIdx >= 0) {
                 val inBuf = codec.getInputBuffer(inIdx) ?: continue
                 inBuf.clear()
-                inBuf.put(bytes)
+                inBuf.put(bytes, 0, n * 4)
                 val ptsUs = totalFrames * 1_000_000L / sampleRate
-                codec.queueInputBuffer(inIdx, 0, bytes.size, ptsUs, 0)
+                codec.queueInputBuffer(inIdx, 0, n * 4, ptsUs, 0)
                 totalFrames += n
             }
             drainAudio(codec, info)

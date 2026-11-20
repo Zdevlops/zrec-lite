@@ -160,9 +160,9 @@ class MainActivity : Activity() {
         }
 
         onRow(R.id.rowFps) {
-            val cap = codec?.maxFps ?: 60
+            val cap = fpsCeiling()
             val idx = fpsOptions.indexOf(prefs.fps).coerceAtLeast(0)
-            pick("Frame rate · maks $cap", fpsOptions.map { "$it fps" }, idx) { i ->
+            pick("Frame rate · ${label(prefs.quality)} maks $cap", fpsOptions.map { "$it fps" }, idx) { i ->
                 prefs.fps = fpsOptions[i]
                 refreshUi()
             }
@@ -287,6 +287,12 @@ class MainActivity : Activity() {
         else -> "${quality}p"
     }
 
+    /** The lower of the app's per-resolution ceiling and what the encoder reports. */
+    private fun fpsCeiling(): Int {
+        val allowed = Caps.FPS_CEILING[prefs.quality] ?: 60
+        return minOf(allowed, codec?.maxFps ?: 60)
+    }
+
     private fun autoBitrate(): Int {
         val (dw, dh) = Caps.displaySize(this)
         val (w, h) = Caps.sizeFor(prefs.quality, dw, dh)
@@ -315,8 +321,12 @@ class MainActivity : Activity() {
         if (prefs.audio == Config.AUDIO_INTERNAL || prefs.audio == Config.AUDIO_BOTH) {
             notes += "Audio internal bisa diblokir sebagian aplikasi."
         }
-        if ((codec?.maxFps ?: 0) <= 60) {
-            notes += "Encoder perangkat ini maksimal 60 fps."
+        val allowed = Caps.FPS_CEILING[prefs.quality] ?: 60
+        if ((codec?.maxFps ?: 0) < allowed) {
+            notes += "Encoder perangkat ini maksimal ${codec?.maxFps} fps."
+        }
+        if (codec?.hardware == false) {
+            notes += "Tidak ada encoder hardware, perekaman memakai CPU."
         }
         tvNote.text = notes.joinToString("\n")
         tvNote.visibility = if (notes.isEmpty()) View.GONE else View.VISIBLE
@@ -353,6 +363,10 @@ class MainActivity : Activity() {
         if (prefs.audio != Config.AUDIO_OFF &&
             checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
         ) need += Manifest.permission.RECORD_AUDIO
+        // Android 8 and 9 still need this to write into MediaStore.
+        if (Build.VERSION.SDK_INT <= 28 &&
+            checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+        ) need += Manifest.permission.WRITE_EXTERNAL_STORAGE
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) need += Manifest.permission.POST_NOTIFICATIONS

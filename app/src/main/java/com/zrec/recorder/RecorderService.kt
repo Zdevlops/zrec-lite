@@ -21,7 +21,6 @@ import android.os.Looper
 import android.view.Display
 import android.widget.Toast
 import java.util.Locale
-import kotlin.math.abs
 import kotlin.math.sqrt
 
 class RecorderService : Service(), SensorEventListener {
@@ -47,7 +46,10 @@ class RecorderService : Service(), SensorEventListener {
 
         private const val CHANNEL = "zrec"
         private const val NOTIF = 71
-        private const val SHAKE_G = 2.6f
+
+        /** A shake peak counts above 2.4 g; two peaks inside 1.5 s stop the take. */
+        private const val SHAKE_G = 2.4f
+        private const val SHAKE_GAP_MS = 250L
         private const val SHAKE_WINDOW_MS = 1500L
 
         @Volatile var active = false
@@ -55,7 +57,7 @@ class RecorderService : Service(), SensorEventListener {
         @Volatile var lastFps = 0
         @Volatile var lastSeconds = 0L
 
-        /** Called on the main thread whenever recording state or stats change. */
+        /** Called whenever recording state or stats change. */
         @Volatile var onEvent: (() -> Unit)? = null
     }
 
@@ -67,8 +69,8 @@ class RecorderService : Service(), SensorEventListener {
 
     private var sensors: SensorManager? = null
     private var accelerometer: Sensor? = null
-    private var lastShakeAt = 0L
-    private var shakeCount = 0
+    private var lastPeakAt = 0L
+    private var peaks = 0
 
     private val main = Handler(Looper.getMainLooper())
 
@@ -77,7 +79,12 @@ class RecorderService : Service(), SensorEventListener {
         lastSeconds = secs
         publish()
     }
-    private val fatal: (String) -> Unit = { finishNow() }
+    private val fatal: (String) -> Unit = { reason ->
+        main.post {
+            toast("Rekaman gagal: $reason")
+            finishNow()
+        }
+    }
 
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {}
@@ -109,7 +116,6 @@ class RecorderService : Service(), SensorEventListener {
         when (intent?.action) {
             ACTION_STOP -> finishNow()
             ACTION_SHOT -> screenshot()
-            ACTION_SHOT_ONLY -> startShotOnly(intent)
             ACTION_PAUSE -> {
                 recorder?.pause()
                 paused = true
@@ -121,6 +127,7 @@ class RecorderService : Service(), SensorEventListener {
                 publish()
             }
             ACTION_START -> startRecording(intent)
+            ACTION_SHOT_ONLY -> startShotOnly(intent)
         }
         return START_STICKY
     }
@@ -154,7 +161,7 @@ class RecorderService : Service(), SensorEventListener {
         )
 
         // Foreground first: Android 14 refuses a projection created before this.
-        startForegroundCompat(buildNotification("Menyiapkan...", "Merekam layar", false))
+        startForegroundCompat(buildNotification("Menyiapkan", "Merekam layar", false))
 
         val mgr = getSystemService(MediaProjectionManager::class.java)
         val proj = runCatching { mgr.getMediaProjection(resultCode, data) }.getOrNull()
@@ -235,34 +242,41 @@ class RecorderService : Service(), SensorEventListener {
     private fun startShake() {
         if (!Prefs(this).shake) return
         val s = accelerometer ?: return
+        lastPeakAt = 0L
+        peaks = 0
         sensors?.registerListener(this, s, SensorManager.SENSOR_DELAY_GAME)
     }
 
     private fun stopShake() {
         runCatching { sensors?.unregisterListener(this) }
+        peaks = 0
+        lastPeakAt = 0L
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
         val e = event ?: return
         if (e.sensor.type != Sensor.TYPE_ACCELEROMETER) return
+
+        val now = System.currentTimeMillis()
+        // Forget stale peaks first, otherwise two shakes a minute apart would add up.
+        if (now - lastPeakAt > SHAKE_WINDOW_MS) peaks = 0
+
         val gx = e.values[0] / SensorManager.GRAVITY_EARTH
         val gy = e.values[1] / SensorManager.GRAVITY_EARTH
         val gz = e.values[2] / SensorManager.GRAVITY_EARTH
-        val g = sqrt(gx * gx + gy * gy + gz * gz)
-        if (abs(g) < SHAKE_G) return
-        val now = System.currentTimeMillis()
-        if (now - lastShakeAt > 300) {
-            lastShakeAt = now
-            shakeCount++
-            if (shakeCount >= 2) {
-                shakeCount = 0
-                main.post {
-                    toast("Rekaman dihentikan")
-                    finishNow()
-                }
-            }
+        if (sqrt(gx * gx + gy * gy + gz * gz) < SHAKE_G) return
+
+        // One shake produces a burst of samples; only the first one counts.
+        if (now - lastPeakAt < SHAKE_GAP_MS) return
+        lastPeakAt = now
+        peaks++
+        if (peaks < 2) return
+
+        peaks = 0
+        main.post {
+            toast("Rekaman dihentikan")
+            finishNow()
         }
-        if (now - lastShakeAt > SHAKE_WINDOW_MS) shakeCount = 0
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
@@ -272,11 +286,12 @@ class RecorderService : Service(), SensorEventListener {
     private fun maybeRotate() {
         val proj = projection ?: return
         val cur = cfg ?: return
-        if (recorder == null) return
+        val old = recorder ?: return
         val (dw, dh) = Caps.displaySize(this)
         val (nw, nh) = Caps.sizeFor(quality, dw, dh)
         if (nw == cur.width && nh == cur.height) return
-        val old = recorder ?: return
+
+        // A virtual display cannot resize, so the take is split at the rotation point.
         recorder = null
         runCatching { old.stop() }
         val nc = cur.copy(width = nw, height = nh, bitrate = Caps.autoBitrate(nw, nh, cur.fps))
@@ -295,7 +310,7 @@ class RecorderService : Service(), SensorEventListener {
             else -> "Merekam"
         }
         val body = if (active) {
-            String.format(Locale.US, "%d fps  -  %02d:%02d", lastFps, lastSeconds / 60, lastSeconds % 60)
+            String.format(Locale.US, "%d fps  ·  %02d:%02d", lastFps, lastSeconds / 60, lastSeconds % 60)
         } else "Siap"
         runCatching {
             getSystemService(NotificationManager::class.java)
