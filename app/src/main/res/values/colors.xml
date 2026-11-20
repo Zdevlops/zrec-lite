@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#FF07080A</color>
-    <color name="surface">#FF101216</color>
-    <color name="surface2">#FF171A20</color>
-    <color name="line">#FF21242B</color>
-    <color name="txt">#FFEDEEF0</color>
-    <color name="txtDim">#FF8C929B</color>
-    <color name="txtFaint">#FF5B6169</color>
-    <color name="accent">#FFFF3D57</color>
-    <color name="accentSoft">#33FF3D57</color>
-    <color name="ok">#FF35D07F</color>
+    <color name="bg">#FF0A0A0C</color>
+    <color name="surface">#FF121215</color>
+    <color name="surface2">#FF1A1A1F</color>
+    <color name="line">#FF26262C</color>
+    <color name="txt">#FFF2F2F4</color>
+    <color name="txtDim">#FF9A9AA4</color>
+    <color name="txtFaint">#FF6B6B76</color>
+    <color name="accent">#FFE5484D</color>
+    <color name="accentPress">#FFCC3F44</color>
+    <color name="ok">#FF3DD68C</color>
 </resources>

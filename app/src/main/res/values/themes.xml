@@ -9,5 +9,19 @@
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:textColorPrimary">@color/txt</item>
         <item name="android:textColorSecondary">@color/txtDim</item>
+        <item name="android:colorControlActivated">@color/accent</item>
+    </style>
+
+    <style name="Theme.Zrec.Dialog" parent="@android:style/Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@drawable/bg_dialog</item>
+        <item name="android:textColorPrimary">@color/txt</item>
+        <item name="android:textColorSecondary">@color/txtDim</item>
+        <item name="android:windowTitleStyle">@style/Theme.Zrec.Dialog.Title</item>
+    </style>
+
+    <style name="Theme.Zrec.Dialog.Title" parent="@android:style/TextAppearance.Material.DialogWindowTitle">
+        <item name="android:textColor">@color/txt</item>
+        <item name="android:textSize">17sp</item>
     </style>
 </resources>

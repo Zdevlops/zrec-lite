@@ -12,10 +12,7 @@
         android:background="@drawable/bg_overlay_panel"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="6dp"
-        android:paddingEnd="6dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp"
+        android:padding="6dp"
         android:visibility="gone">
 
         <ImageButton
@@ -51,23 +48,22 @@
 
     <FrameLayout
         android:id="@+id/bubble"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
         android:layout_marginStart="8dp"
-        android:background="@drawable/bg_bubble"
-        android:elevation="8dp">
+        android:background="@drawable/bg_bubble">
 
         <ImageView
-            android:layout_width="30dp"
-            android:layout_height="30dp"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
             android:layout_gravity="center"
             android:src="@drawable/ic_bubble_logo"
             android:contentDescription="Zrec" />
 
         <View
             android:id="@+id/dot"
-            android:layout_width="9dp"
-            android:layout_height="9dp"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
             android:layout_gravity="top|end"
             android:layout_marginTop="6dp"
             android:layout_marginEnd="6dp"
