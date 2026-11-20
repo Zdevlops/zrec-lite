@@ -113,7 +113,14 @@ class RecorderService : Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
+        if (intent == null) {
+            // The system restarted the service after a kill. The projection is gone with
+            // the process, so there is nothing to resume: old behaviour left a dead
+            // foreground notification and a service that could never record again.
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        when (intent.action) {
             ACTION_STOP -> finishNow()
             ACTION_SHOT -> screenshot()
             ACTION_PAUSE -> {
@@ -129,7 +136,7 @@ class RecorderService : Service(), SensorEventListener {
             ACTION_START -> startRecording(intent)
             ACTION_SHOT_ONLY -> startShotOnly(intent)
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun startRecording(intent: Intent) {
@@ -182,6 +189,9 @@ class RecorderService : Service(), SensorEventListener {
         active = true
         paused = false
         rec.start()
+        if (c.audio != Config.AUDIO_OFF && !rec.audioStarted) {
+            toast("Audio unavailable - recording without sound")
+        }
         startShake()
         publish()
     }
@@ -208,14 +218,23 @@ class RecorderService : Service(), SensorEventListener {
             return
         }
         projection = proj
+        // Android 14 refuses createVirtualDisplay() until a callback is registered.
+        proj.registerCallback(object : MediaProjection.Callback() {
+            override fun onStop() {
+                // Nothing to unwind here: Shot releases its own display.
+            }
+        }, main)
         Shot.capture(
             this, proj,
             intent.getIntExtra(EXTRA_W, 1080),
             intent.getIntExtra(EXTRA_H, 1920),
             intent.getIntExtra(EXTRA_DPI, 420)
-        ) { name ->
+        ) { name, reason ->
             main.post {
-                toast(if (name != null) "Screenshot saved" else "Screenshot failed")
+                toast(
+                    if (name != null) "Screenshot saved"
+                    else "Screenshot failed: ${reason ?: "unknown"}"
+                )
                 runCatching { proj.stop() }
                 projection = null
                 runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
@@ -225,14 +244,17 @@ class RecorderService : Service(), SensorEventListener {
     }
 
     private fun screenshot() {
-        val proj = projection ?: run {
+        val rec = recorder
+        if (rec == null) {
             toast("Not recording yet")
             return
         }
-        val c = cfg ?: return
-        Shot.capture(this, proj, c.width, c.height, c.dpi) { name ->
+        rec.grabFrame(this) { name, reason ->
             main.post {
-                toast(if (name != null) "Screenshot saved" else "Screenshot failed")
+                toast(
+                    if (name != null) "Screenshot saved"
+                    else "Screenshot failed: ${reason ?: "unknown"}"
+                )
             }
         }
     }
@@ -283,6 +305,8 @@ class RecorderService : Service(), SensorEventListener {
 
     // ---------- rotation ----------
 
+    private var rotationNoted = false
+
     private fun maybeRotate() {
         val proj = projection ?: return
         val cur = cfg ?: return
@@ -291,7 +315,21 @@ class RecorderService : Service(), SensorEventListener {
         val (nw, nh) = Caps.sizeFor(quality, dw, dh)
         if (nw == cur.width && nh == cur.height) return
 
-        // A virtual display cannot resize, so the take is split at the rotation point.
+        // Android 14: one createVirtualDisplay() per MediaProjection, and a cached
+        // consent Intent cannot be reused ("User consent required for each
+        // MediaProjection capture session"). So from 14 on, restarting the encoder
+        // here would throw SecurityException and kill the take. Keep the take alive
+        // in its starting orientation and say so once.
+        if (Build.VERSION.SDK_INT >= 34) {
+            if (!rotationNoted) {
+                rotationNoted = true
+                toast("Rotated: video stays in the starting orientation")
+            }
+            return
+        }
+
+        // Older releases can open a second display, so the take is split at the
+        // rotation point: a virtual display cannot be resized.
         recorder = null
         runCatching { old.stop() }
         val nc = cur.copy(width = nw, height = nh, bitrate = Caps.autoBitrate(nw, nh, cur.fps))

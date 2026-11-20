@@ -60,6 +60,12 @@ class ScreenRecorder(
     @Volatile private var paused = false
     @Volatile private var stopping = false
 
+    /** True only when an audio source really opened; the muxer waits for it. */
+    @Volatile private var audioOn = false
+
+    /** Set in start(); used to stop waiting for an audio track that never arrives. */
+    private var beganNs = 0L
+
     private var pausedUs = 0L
     private var pauseStartNs = 0L
 
@@ -73,13 +79,21 @@ class ScreenRecorder(
     val isRunning: Boolean get() = looping
     val isPaused: Boolean get() = paused
 
+    /** False when audio was asked for but no source could be opened. */
+    val audioStarted: Boolean get() = audioOn
+
     fun start() {
         try {
+            beganNs = System.nanoTime()
             openOutput()
             startVideo()
-            if (cfg.audio != Config.AUDIO_OFF) startAudio()
+            if (cfg.audio != Config.AUDIO_OFF) {
+                // A refused mic, or a phone that will not share internal audio, used to
+                // throw here and kill the whole take. Video-only beats no recording.
+                audioOn = runCatching { startAudio() }.getOrDefault(false)
+            }
             videoThread = thread("zrec-video") { videoLoop() }
-            if (audioCodec != null) audioThread = thread("zrec-audio") { audioLoop() }
+            if (audioOn) audioThread = thread("zrec-audio") { audioLoop() }
             createVirtualDisplay()
             statsThread = thread("zrec-stats") { statsLoop() }
         } catch (t: Throwable) {
@@ -106,6 +120,21 @@ class ScreenRecorder(
                 })
             }
         }
+    }
+
+    /**
+     * Screenshot from the live session. Android 14 allows only one
+     * createVirtualDisplay() per MediaProjection, so the frame is taken from the
+     * running display instead of opening a second capture session.
+     */
+    fun grabFrame(ctx: Context, done: (String?, String?) -> Unit) {
+        val d = display
+        val enc = inputSurface
+        if (d == null || enc == null) {
+            done(null, "not capturing")
+            return
+        }
+        Shot.captureFromDisplay(ctx, d, enc, cfg.width, cfg.height, done)
     }
 
     fun stop() {
@@ -205,6 +234,17 @@ class ScreenRecorder(
         val codec = videoCodec ?: return
         val info = MediaCodec.BufferInfo()
         while (looping) {
+            // An audio track that never reports its format used to hold the muxer
+            // closed for the whole take: nothing was written and the file was deleted
+            // on stop. After 2.5 s the take is written video-only instead.
+            if (!muxStarted && vTrack >= 0 && beganNs > 0 &&
+                System.nanoTime() - beganNs > 2_500_000_000L
+            ) {
+                synchronized(lock) {
+                    audioOn = false
+                    maybeStartMuxer()
+                }
+            }
             val idx = try {
                 codec.dequeueOutputBuffer(info, 10_000)
             } catch (_: Throwable) {
@@ -240,7 +280,14 @@ class ScreenRecorder(
 
     // ---------- audio ----------
 
-    private fun startAudio() {
+    /**
+     * Opens the audio sources and the AAC encoder.
+     *
+     * Returns false when no source could be opened, so the caller can carry on with
+     * video only. Each step is guarded on its own: one refused source must not take
+     * the other one down with it.
+     */
+    private fun startAudio(): Boolean {
         val stereo = AudioFormat.Builder()
             .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
             .setSampleRate(sampleRate)
@@ -256,24 +303,39 @@ class ScreenRecorder(
         ).coerceAtLeast(8192) * 2
 
         if (cfg.audio == Config.AUDIO_MIC || cfg.audio == Config.AUDIO_BOTH) {
-            mic = AudioRecord.Builder()
-                .setAudioSource(MediaRecorder.AudioSource.MIC)
-                .setAudioFormat(mono)
-                .setBufferSizeInBytes(bufBytes)
-                .build()
+            mic = runCatching {
+                AudioRecord.Builder()
+                    .setAudioSource(MediaRecorder.AudioSource.MIC)
+                    .setAudioFormat(mono)
+                    .setBufferSizeInBytes(bufBytes)
+                    .build()
+            }.getOrNull()
         }
         if (cfg.audio == Config.AUDIO_INTERNAL || cfg.audio == Config.AUDIO_BOTH) {
-            val capture = AudioPlaybackCaptureConfiguration.Builder(projection)
-                .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
-                .addMatchingUsage(AudioAttributes.USAGE_GAME)
-                .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN)
-                .build()
-            internalRec = AudioRecord.Builder()
-                .setAudioFormat(stereo)
-                .setBufferSizeInBytes(bufBytes)
-                .setAudioPlaybackCaptureConfig(capture)
-                .build()
+            internalRec = runCatching {
+                val capture = AudioPlaybackCaptureConfiguration.Builder(projection)
+                    .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
+                    .addMatchingUsage(AudioAttributes.USAGE_GAME)
+                    .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN)
+                    .build()
+                AudioRecord.Builder()
+                    .setAudioFormat(stereo)
+                    .setBufferSizeInBytes(bufBytes)
+                    .setAudioPlaybackCaptureConfig(capture)
+                    .build()
+            }.getOrNull()
         }
+
+        // A recorder that never reached STATE_INITIALIZED throws on startRecording().
+        if (mic?.state != AudioRecord.STATE_INITIALIZED) {
+            runCatching { mic?.release() }
+            mic = null
+        }
+        if (internalRec?.state != AudioRecord.STATE_INITIALIZED) {
+            runCatching { internalRec?.release() }
+            internalRec = null
+        }
+        if (mic == null && internalRec == null) return false
 
         val codec = MediaCodec.createEncoderByType("audio/mp4a-latm")
         val format = MediaFormat.createAudioFormat("audio/mp4a-latm", sampleRate, 2).apply {
@@ -285,8 +347,9 @@ class ScreenRecorder(
         codec.start()
         audioCodec = codec
 
-        mic?.startRecording()
-        internalRec?.startRecording()
+        runCatching { mic?.startRecording() }
+        runCatching { internalRec?.startRecording() }
+        return true
     }
 
     private fun audioLoop() {
@@ -347,7 +410,11 @@ class ScreenRecorder(
             val outIdx = try { codec.dequeueOutputBuffer(info, 0) } catch (_: Throwable) { return }
             if (outIdx == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 synchronized(lock) {
-                    if (muxer != null) aTrack = muxer!!.addTrack(codec.outputFormat)
+                    // Adding a track to an already started muxer throws, and by then the
+                    // take is being written video-only.
+                    if (muxer != null && !muxStarted && audioOn) {
+                        aTrack = muxer!!.addTrack(codec.outputFormat)
+                    }
                     maybeStartMuxer()
                 }
                 continue
@@ -376,7 +443,7 @@ class ScreenRecorder(
         if (muxStarted) return
         val m = muxer ?: return
         if (vTrack < 0) return
-        if (cfg.audio != Config.AUDIO_OFF && aTrack < 0) return
+        if (audioOn && aTrack < 0) return
         runCatching { m.start() }
         muxStarted = true
     }
@@ -392,7 +459,11 @@ class ScreenRecorder(
             val fps = if (now > lastNs) ((f - lastFrames) * 1_000_000_000L / (now - lastNs)).toInt() else 0
             lastFrames = f
             lastNs = now
-            onStats(fps, (now - startNs) / 1_000_000_000L)
+            // Paused time has no frames in the file, so counting it made the clock show
+            // more than the video actually contains. Subtract it, including the pause
+            // that is still running.
+            val pauseNs = pausedUs * 1000L + (if (paused) now - pauseStartNs else 0L)
+            onStats(fps, ((now - startNs - pauseNs) / 1_000_000_000L).coerceAtLeast(0L))
         }
     }
 

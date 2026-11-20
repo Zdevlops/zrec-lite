@@ -385,8 +385,9 @@ class OverlayService : Service() {
     private fun shot() {
         expand(false)
         if (RecorderService.active) {
+            // The recorder reports the real result; saying "saved" here first meant two
+            // toasts, and the first one was a guess that could be wrong.
             startService(Intent(this, RecorderService::class.java).setAction(RecorderService.ACTION_SHOT))
-            toast("Screenshot saved")
         } else {
             startActivity(
                 Intent(this, MainActivity::class.java)

@@ -14,29 +14,36 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.provider.MediaStore
+import android.view.Surface
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** Grabs a single frame off the projection and saves it to Pictures/Zrec. */
 object Shot {
 
     private const val TIMEOUT_MS = 3000L
 
+    /**
+     * Screenshot with its own projection, used when nothing is being recorded.
+     * The caller must have registered a MediaProjection.Callback first: Android 14
+     * throws IllegalStateException from createVirtualDisplay without one.
+     */
     fun capture(
         ctx: Context,
         projection: MediaProjection,
         width: Int,
         height: Int,
         dpi: Int,
-        done: (String?) -> Unit
+        done: (String?, String?) -> Unit
     ) {
-        val w = (width / 16) * 16
-        val h = (height / 16) * 16
-        if (w <= 0 || h <= 0) {
-            done(null)
+        val size = aligned(width, height)
+        if (size == null) {
+            done(null, "bad size")
             return
         }
+        val (w, h) = size
 
         val main = Handler(Looper.getMainLooper())
         val worker = HandlerThread("zrec-shot").apply { start() }
@@ -44,26 +51,31 @@ object Shot {
         val reader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 2)
 
         var display: VirtualDisplay? = null
-        var finished = false
+        val finished = AtomicBoolean(false)
 
         // The callback always lands on the main thread, and always fires exactly once,
         // even if the worker handler has already been told to quit.
-        fun finish(msg: String?) {
-            if (finished) return
-            finished = true
+        fun finish(name: String?, reason: String?) {
+            if (!finished.compareAndSet(false, true)) return
             runCatching { display?.release() }
             display = null
             runCatching { reader.close() }
             runCatching { worker.quitSafely() }
-            main.post { done(msg) }
+            main.post { done(name, reason) }
         }
 
         reader.setOnImageAvailableListener({ r ->
-            val image = runCatching { r.acquireLatestImage() }.getOrNull() ?: return@setOnImageAvailableListener
-            val name = "Zrec_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".png"
-            val saved = runCatching { save(ctx, image, w, h, name) }.getOrNull()
+            val image = runCatching { r.acquireLatestImage() }.getOrNull()
+            if (image == null) {
+                finish(null, "no frame")
+                return@setOnImageAvailableListener
+            }
+            val result = runCatching { save(ctx, image, w, h) }
             runCatching { image.close() }
-            finish(saved)
+            val name = result.getOrNull()
+            val why = result.exceptionOrNull()?.message
+                ?: if (name == null) "could not save" else null
+            finish(name, why)
         }, workerHandler)
 
         display = runCatching {
@@ -72,16 +84,92 @@ object Shot {
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                 reader.surface, null, workerHandler
             )
-        }.getOrNull()
-
-        if (display == null) {
-            finish(null)
-            return
+        }.getOrElse { t ->
+            finish(null, t.message ?: t.javaClass.simpleName)
+            null
         }
-        main.postDelayed({ finish(null) }, TIMEOUT_MS)
+
+        if (display == null) return
+        main.postDelayed({ finish(null, "timed out") }, TIMEOUT_MS)
     }
 
-    private fun save(ctx: Context, image: Image, w: Int, h: Int, name: String): String? {
+    /**
+     * Screenshot during a recording. Android 14 allows only one
+     * createVirtualDisplay() per MediaProjection, so this cannot open a second
+     * capture session. Instead the live display is pointed at an ImageReader for
+     * a single frame and then handed straight back to the encoder. The take keeps
+     * going; it just loses the frames produced during the swap.
+     */
+    fun captureFromDisplay(
+        ctx: Context,
+        display: VirtualDisplay,
+        encoderSurface: Surface,
+        width: Int,
+        height: Int,
+        done: (String?, String?) -> Unit
+    ) {
+        val size = aligned(width, height)
+        if (size == null) {
+            done(null, "bad size")
+            return
+        }
+        val (w, h) = size
+
+        val main = Handler(Looper.getMainLooper())
+        val worker = HandlerThread("zrec-shot").apply { start() }
+        val workerHandler = Handler(worker.looper)
+        val reader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 2)
+
+        val finished = AtomicBoolean(false)
+        val restored = AtomicBoolean(false)
+
+        fun restore() {
+            if (restored.compareAndSet(false, true)) {
+                runCatching { display.setSurface(encoderSurface) }
+            }
+        }
+
+        fun finish(name: String?, reason: String?) {
+            if (!finished.compareAndSet(false, true)) return
+            restore()
+            runCatching { reader.close() }
+            runCatching { worker.quitSafely() }
+            main.post { done(name, reason) }
+        }
+
+        reader.setOnImageAvailableListener({ r ->
+            val image = runCatching { r.acquireLatestImage() }.getOrNull()
+            // Give the display back to the encoder before doing any work on the frame.
+            restore()
+            if (image == null) {
+                finish(null, "no frame")
+                return@setOnImageAvailableListener
+            }
+            val result = runCatching { save(ctx, image, w, h) }
+            runCatching { image.close() }
+            val name = result.getOrNull()
+            val why = result.exceptionOrNull()?.message
+                ?: if (name == null) "could not save" else null
+            finish(name, why)
+        }, workerHandler)
+
+        runCatching { display.setSurface(reader.surface) }.onFailure { t ->
+            finish(null, t.message ?: t.javaClass.simpleName)
+            return
+        }
+        main.postDelayed({ finish(null, "timed out") }, TIMEOUT_MS)
+    }
+
+    private fun aligned(width: Int, height: Int): Pair<Int, Int>? {
+        val w = (width / 16) * 16
+        val h = (height / 16) * 16
+        return if (w <= 0 || h <= 0) null else w to h
+    }
+
+    private fun fileName(): String =
+        "Zrec_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".png"
+
+    private fun save(ctx: Context, image: Image, w: Int, h: Int): String? {
         val plane = image.planes[0]
         val buffer = plane.buffer
         val pixelStride = plane.pixelStride.coerceAtLeast(1)
@@ -100,6 +188,7 @@ object Shot {
             cropped
         }
 
+        val name = fileName()
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, name)
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
@@ -109,10 +198,17 @@ object Shot {
             }
         }
         val uri = ctx.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-            ?: return null
-        ctx.contentResolver.openOutputStream(uri)?.use { out ->
-            bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
-        } ?: return null
+            ?: run {
+                bmp.recycle()
+                return null
+            }
+        val out = ctx.contentResolver.openOutputStream(uri)
+        if (out == null) {
+            runCatching { ctx.contentResolver.delete(uri, null, null) }
+            bmp.recycle()
+            return null
+        }
+        out.use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
         if (Build.VERSION.SDK_INT >= 29) {
             ctx.contentResolver.update(
                 uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null
