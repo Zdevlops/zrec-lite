@@ -23,7 +23,9 @@ Satu file, tidak ada tambahan lain. Ambil di [Releases](../../releases/latest).
 |---|---|
 | **Screen recording** | MediaProjection langsung ke hardware encoder, tanpa re-encode |
 | **Floating control** | Bola yang bisa digeser di luar aplikasi: record, stop, pause, screenshot |
+| **Close by drag** | Geser bola ke target di tengah bawah untuk menutupnya, tanpa masuk ke aplikasi |
 | **Hide while recording** | Bola hilang otomatis supaya hasil rekaman bersih |
+| **Summon by volume** | Tekan volume bawah dua kali untuk memunculkan bola lagi selama 5 detik |
 | **Shake to stop** | Goyang dua kali saat merekam |
 | **Screenshot** | Bisa saat merekam atau tanpa merekam, tersimpan ke `Pictures/Zrec` |
 | **Audio** | Off, Mic, Internal, atau Mic + internal |
@@ -108,6 +110,7 @@ app/src/main/java/com/zrec/recorder/
 ## Known limits
 
 - Floating control tidak bisa terlihat di layar tapi hilang dari rekaman. Android tidak menyediakan itu. Karena itu bola disembunyikan selama merekam, dan kontrol pindah ke notifikasi.
+- Memanggil bola dengan volume bawah 2x hanya bekerja kalau volume benar-benar turun. Kalau media sudah di angka 0, tidak ada perubahan yang bisa dideteksi. Kontrol rekam tetap ada di notifikasi, dan bola muncul sendiri begitu rekaman selesai.
 - Audio internal bisa kosong di aplikasi yang melarang perekaman suaranya. Ini keputusan aplikasi tersebut, bukan bug Zrec.
 - Kalau "Hide while recording" dimatikan, bola ikut terekam.
 - Rotasi di tengah rekaman menghasilkan dua file, bukan satu file yang berputar.

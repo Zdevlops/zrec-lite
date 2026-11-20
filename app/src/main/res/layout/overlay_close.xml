@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Drop target that appears while the bubble is being dragged. Let go over it
+     and the floating control closes. The window is 96dp so the inner ring can
+     grow a little without being clipped by the window surface. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/closeZone"
+    android:layout_width="96dp"
+    android:layout_height="96dp">
+
+    <FrameLayout
+        android:id="@+id/closeRing"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_close_zone">
+
+        <ImageView
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_close"
+            android:contentDescription="Close floating control" />
+    </FrameLayout>
+</FrameLayout>

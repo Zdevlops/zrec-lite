@@ -312,14 +312,23 @@ class RecorderService : Service(), SensorEventListener {
         val body = if (active) {
             String.format(Locale.US, "%d fps  ·  %02d:%02d", lastFps, lastSeconds / 60, lastSeconds % 60)
         } else "Ready"
+        // The bubble hides itself while recording, so say how to get it back.
+        val hint = if (active && Prefs(this).hideOverlayOnRecord) {
+            "Volume down 2x shows the bubble"
+        } else null
         runCatching {
             getSystemService(NotificationManager::class.java)
-                .notify(NOTIF, buildNotification(title, body, paused))
+                .notify(NOTIF, buildNotification(title, body, paused, hint))
         }
         onEvent?.invoke()
     }
 
-    private fun buildNotification(title: String, body: String, isPaused: Boolean): Notification {
+    private fun buildNotification(
+        title: String,
+        body: String,
+        isPaused: Boolean,
+        hint: String? = null
+    ): Notification {
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -336,6 +345,7 @@ class RecorderService : Service(), SensorEventListener {
             .setSmallIcon(R.drawable.ic_notif)
             .setContentTitle(title)
             .setContentText(body)
+            .setSubText(hint)
             .setContentIntent(open)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
