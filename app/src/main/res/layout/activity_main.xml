@@ -1,535 +1,198 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
-    android:fillViewport="true"
-    android:scrollbars="none">
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="24dp"
-        android:paddingBottom="40dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/app_name"
-                android:textColor="@color/txt"
-                android:textSize="20sp"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="-0.02" />
-
-            <TextView
-                android:id="@+id/tvVersion"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/txtFaint"
-                android:textSize="11sp"
-                android:fontFamily="monospace" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <View
-                android:id="@+id/dot"
-                android:layout_width="7dp"
-                android:layout_height="7dp"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_dot_rec"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/tvState"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/state_ready"
-                android:textColor="@color/txtDim"
-                android:textSize="13sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:orientation="horizontal"
-            android:gravity="bottom">
-
-            <TextView
-                android:id="@+id/tvTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="00:00"
-                android:textColor="@color/txtFaint"
-                android:textSize="56sp"
-                android:fontFamily="monospace"
-                android:letterSpacing="-0.03"
-                android:includeFontPadding="false" />
-
-            <TextView
-                android:id="@+id/tvFps"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_marginBottom="9dp"
-                android:textColor="@color/txtDim"
-                android:textSize="12sp"
-                android:fontFamily="monospace"
-                android:visibility="gone" />
-        </LinearLayout>
+        android:paddingTop="20dp"
+        android:paddingBottom="4dp">
 
         <TextView
-            android:id="@+id/btnRecord"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="28dp"
-            android:background="@drawable/bg_btn_record"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="-0.02"
+            android:text="@string/app_name"
+            android:textColor="@color/txt"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/tvVersion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:textColor="@color/txtFaint"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/pageHost"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <include
+            android:id="@+id/pageRecord"
+            layout="@layout/view_record" />
+
+        <include
+            android:id="@+id/pageCapture"
+            layout="@layout/view_capture" />
+
+        <include
+            android:id="@+id/pageControls"
+            layout="@layout/view_controls" />
+
+        <include
+            android:id="@+id/pageInfo"
+            layout="@layout/view_info" />
+    </FrameLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/line" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
+
+        <LinearLayout
+            android:id="@+id/tabRecord"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_nav_active"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center"
-            android:text="@string/btn_start"
-            android:textColor="@color/bg"
-            android:textSize="15sp"
-            android:fontFamily="sans-serif-medium" />
+            android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="36dp"
-            android:layout_marginBottom="10dp"
-            android:text="@string/section_capture"
-            android:textColor="@color/txtFaint"
-            android:textSize="12sp" />
+            <ImageView
+                android:id="@+id/icTabRecord"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_tab_record" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:padding="6dp">
-
-            <LinearLayout
-                android:id="@+id/rowRes"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="@drawable/bg_row"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="14dp"
-                android:paddingEnd="12dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/label_resolution"
-                    android:textColor="@color/txt"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:id="@+id/tvResValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/txtDim"
-                    android:textSize="15sp" />
-
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:layout_marginStart="6dp"
-                    android:src="@drawable/ic_chevron"
-                    android:contentDescription="@null" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="14dp"
-                android:layout_marginEnd="14dp"
-                android:background="@color/line" />
-
-            <LinearLayout
-                android:id="@+id/rowFps"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="@drawable/bg_row"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="14dp"
-                android:paddingEnd="12dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/label_fps"
-                    android:textColor="@color/txt"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:id="@+id/tvFpsValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/txtDim"
-                    android:textSize="15sp" />
-
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:layout_marginStart="6dp"
-                    android:src="@drawable/ic_chevron"
-                    android:contentDescription="@null" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="14dp"
-                android:layout_marginEnd="14dp"
-                android:background="@color/line" />
-
-            <LinearLayout
-                android:id="@+id/rowCodec"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="@drawable/bg_row"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="14dp"
-                android:paddingEnd="12dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/label_codec"
-                    android:textColor="@color/txt"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:id="@+id/tvCodecValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/txtDim"
-                    android:textSize="15sp" />
-
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:layout_marginStart="6dp"
-                    android:src="@drawable/ic_chevron"
-                    android:contentDescription="@null" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="14dp"
-                android:layout_marginEnd="14dp"
-                android:background="@color/line" />
-
-            <LinearLayout
-                android:id="@+id/rowBitrate"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="@drawable/bg_row"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="14dp"
-                android:paddingEnd="12dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/label_bitrate"
-                    android:textColor="@color/txt"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:id="@+id/tvBitrateValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/txtDim"
-                    android:textSize="15sp" />
-
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:layout_marginStart="6dp"
-                    android:src="@drawable/ic_chevron"
-                    android:contentDescription="@null" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="14dp"
-                android:layout_marginEnd="14dp"
-                android:background="@color/line" />
-
-            <LinearLayout
-                android:id="@+id/rowAudio"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="@drawable/bg_row"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="14dp"
-                android:paddingEnd="12dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/label_audio"
-                    android:textColor="@color/txt"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:id="@+id/tvAudioValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/txtDim"
-                    android:textSize="15sp" />
-
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:layout_marginStart="6dp"
-                    android:src="@drawable/ic_chevron"
-                    android:contentDescription="@null" />
-            </LinearLayout>
+            <TextView
+                android:id="@+id/tvTabRecord"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="@string/tab_record"
+                android:textColor="@color/txt"
+                android:textSize="11sp" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvNote"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:textColor="@color/txtFaint"
-            android:textSize="12sp"
-            android:lineSpacingExtra="3dp"
-            android:visibility="gone" />
+        <LinearLayout
+            android:id="@+id/tabCapture"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="36dp"
-            android:layout_marginBottom="10dp"
-            android:text="@string/section_controls"
-            android:textColor="@color/txtFaint"
-            android:textSize="12sp" />
+            <ImageView
+                android:id="@+id/icTabCapture"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_tab_capture" />
+
+            <TextView
+                android:id="@+id/tvTabCapture"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="@string/tab_capture"
+                android:textColor="@color/txtFaint"
+                android:textSize="11sp" />
+        </LinearLayout>
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:padding="6dp">
+            android:id="@+id/tabControls"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <ImageView
+                android:id="@+id/icTabControls"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_tab_controls" />
+
+            <TextView
+                android:id="@+id/tvTabControls"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:paddingTop="13dp"
-                android:paddingBottom="13dp">
+                android:layout_marginTop="3dp"
+                android:text="@string/tab_controls"
+                android:textColor="@color/txtFaint"
+                android:textSize="11sp" />
+        </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:paddingEnd="12dp">
+        <LinearLayout
+            android:id="@+id/tabInfo"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/label_floating"
-                        android:textColor="@color/txt"
-                        android:textSize="15sp" />
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:text="@string/hint_floating"
-                        android:textColor="@color/txtFaint"
-                        android:textSize="12sp" />
-                </LinearLayout>
+                <ImageView
+                    android:id="@+id/icTabInfo"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_tab_info" />
 
-                <Switch
-                    android:id="@+id/swOverlay"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
+                <View
+                    android:id="@+id/dotUpdate"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="-1dp"
+                    android:layout_marginEnd="-2dp"
+                    android:background="@drawable/bg_dot_rec"
+                    android:visibility="gone" />
+            </FrameLayout>
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="14dp"
-                android:layout_marginEnd="14dp"
-                android:background="@color/line" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tvTabInfo"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:paddingTop="13dp"
-                android:paddingBottom="13dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:paddingEnd="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/label_hide"
-                        android:textColor="@color/txt"
-                        android:textSize="15sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:text="@string/hint_hide"
-                        android:textColor="@color/txtFaint"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <Switch
-                    android:id="@+id/swHide"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="14dp"
-                android:layout_marginEnd="14dp"
-                android:background="@color/line" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:paddingTop="13dp"
-                android:paddingBottom="13dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:paddingEnd="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/label_shake"
-                        android:textColor="@color/txt"
-                        android:textSize="15sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:text="@string/hint_shake"
-                        android:textColor="@color/txtFaint"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <Switch
-                    android:id="@+id/swShake"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginStart="14dp"
-                android:layout_marginEnd="14dp"
-                android:background="@color/line" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:paddingTop="13dp"
-                android:paddingBottom="13dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:paddingEnd="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/label_countdown"
-                        android:textColor="@color/txt"
-                        android:textSize="15sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:text="@string/hint_countdown"
-                        android:textColor="@color/txtFaint"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <Switch
-                    android:id="@+id/swCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
+                android:layout_marginTop="3dp"
+                android:text="@string/tab_info"
+                android:textColor="@color/txtFaint"
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
-</ScrollView>
+</LinearLayout>

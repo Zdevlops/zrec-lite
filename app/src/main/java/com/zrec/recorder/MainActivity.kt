@@ -15,6 +15,8 @@ import android.os.Looper
 import android.provider.Settings
 import android.view.View
 import android.widget.CompoundButton
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
@@ -46,6 +48,15 @@ class MainActivity : Activity() {
     private lateinit var swHide: Switch
     private lateinit var swShake: Switch
     private lateinit var swCount: Switch
+
+    // Empat tab: satu layar satu tugas, jadi halaman Record isinya cuma record.
+    private lateinit var pages: List<View>
+    private lateinit var tabs: List<LinearLayout>
+    private lateinit var tabIcons: List<ImageView>
+    private lateinit var tabLabels: List<TextView>
+    private var tabIndex = 0
+    private lateinit var tvVersionValue: TextView
+    private lateinit var tvBuildValue: TextView
 
     private var codecs: List<Caps.Codec> = emptyList()
     private var codec: Caps.Codec? = null
@@ -90,10 +101,21 @@ class MainActivity : Activity() {
         swHide = findViewById(R.id.swHide)
         swShake = findViewById(R.id.swShake)
         swCount = findViewById(R.id.swCount)
+        tvVersionValue = findViewById(R.id.tvVersionValue)
+        tvBuildValue = findViewById(R.id.tvBuildValue)
 
-        tvVersion.text = runCatching {
-            packageManager.getPackageInfo(packageName, 0).versionName
-        }.getOrNull() ?: ""
+        bindTabs()
+
+        val info = runCatching { packageManager.getPackageInfo(packageName, 0) }.getOrNull()
+        val versionName = info?.versionName.orEmpty()
+        val build = when {
+            info == null -> 0L
+            Build.VERSION.SDK_INT >= 28 -> info.longVersionCode
+            else -> info.versionCode.toLong()
+        }
+        tvVersion.text = versionName
+        tvVersionValue.text = versionName
+        tvBuildValue.text = build.toString()
 
         val (dw, dh) = Caps.displaySize(this)
         codecs = Caps.probe(dw, dh)
@@ -138,6 +160,51 @@ class MainActivity : Activity() {
             i.removeExtra(EXTRA_SHOT)
             shotMode = true
             handler.postDelayed({ beginShot() }, 350)
+        }
+    }
+
+    // ---------- tabs ----------
+
+    private fun bindTabs() {
+        pages = listOf(
+            findViewById(R.id.pageRecord),
+            findViewById(R.id.pageCapture),
+            findViewById(R.id.pageControls),
+            findViewById(R.id.pageInfo)
+        )
+        tabs = listOf(
+            findViewById(R.id.tabRecord),
+            findViewById(R.id.tabCapture),
+            findViewById(R.id.tabControls),
+            findViewById(R.id.tabInfo)
+        )
+        tabIcons = listOf(
+            findViewById(R.id.icTabRecord),
+            findViewById(R.id.icTabCapture),
+            findViewById(R.id.icTabControls),
+            findViewById(R.id.icTabInfo)
+        )
+        tabLabels = listOf(
+            findViewById(R.id.tvTabRecord),
+            findViewById(R.id.tvTabCapture),
+            findViewById(R.id.tvTabControls),
+            findViewById(R.id.tvTabInfo)
+        )
+        tabs.forEachIndexed { i, tab -> tab.setOnClickListener { selectTab(i) } }
+        selectTab(0)
+    }
+
+    private fun selectTab(index: Int) {
+        tabIndex = index.coerceIn(0, pages.lastIndex)
+        pages.forEachIndexed { i, p ->
+            p.visibility = if (i == tabIndex) View.VISIBLE else View.GONE
+        }
+        tabs.forEachIndexed { i, tab ->
+            val on = i == tabIndex
+            tab.setBackgroundResource(if (on) R.drawable.bg_nav_active else 0)
+            val tint = getColor(if (on) R.color.txt else R.color.txtFaint)
+            tabIcons[i].setColorFilter(tint)
+            tabLabels[i].setTextColor(tint)
         }
     }
 

@@ -12,6 +12,20 @@
 
     <string name="section_capture">Capture</string>
     <string name="section_controls">Controls</string>
+    <string name="section_info">Info</string>
+
+    <string name="tab_record">Record</string>
+    <string name="tab_capture">Capture</string>
+    <string name="tab_controls">Controls</string>
+    <string name="tab_info">Info</string>
+
+    <string name="record_hint">Everything on screen is recorded. The floating control can start and stop the take from any app.</string>
+    <string name="controls_hint">The floating control is a bubble you can drag anywhere. Drop it on the target at the bottom to close it, then press volume down twice to bring it back.</string>
+
+    <string name="label_version">Version</string>
+    <string name="label_build">Build</string>
+    <string name="info_footer">Zrec records the whole screen with no app picker, so any game or app is captured as it is.</string>
+    <string name="info_lite">Lite build: no network access, no in-app update. New versions are installed by hand.</string>
 
     <string name="label_resolution">Resolution</string>
     <string name="label_fps">Frame rate</string>
