@@ -6,7 +6,7 @@
   </a>
 </p>
 
-Screen recorder Android tanpa iklan, tanpa watermark, dan tanpa akun. Dibuat native dengan Kotlin dan framework Android saja, jadi APK-nya di bawah 100 KB.
+Screen recorder Android tanpa iklan, tanpa watermark, dan tanpa akun. Dibuat native dengan Kotlin dan framework Android saja, jadi APK-nya sekitar 100 KB.
 
 Satu file, tidak ada tambahan lain. Ambil di [Releases](../../releases/latest).
 
@@ -27,7 +27,7 @@ Satu file, tidak ada tambahan lain. Ambil di [Releases](../../releases/latest).
 | **Hide while recording** | Bola tampil 2,5 detik saat rekaman mulai, lalu hilang supaya video bersih |
 | **Summon by volume** | Tekan volume bawah dua kali untuk memunculkan bola lagi selama 5 detik. Kalau tombol volume sedang mengatur stream lain, tombol **Show control** di notifikasi tetap bisa dipakai |
 | **Shake to stop** | Goyang dua kali saat merekam, dengan getar pendek sebagai tanda goyangan diterima |
-| **Screenshot** | Bisa saat merekam atau tanpa merekam, tersimpan ke `Pictures/Zrec` |
+| **Screenshot** | Sekali tap, tanpa dialog izin bagikan layar di Android 11+. Bisa saat merekam atau tanpa merekam, tersimpan ke `Pictures/Zrec` |
 | **Audio** | Off, Mic, Internal, atau Mic + internal. Kalau sumbernya ditolak HP, rekaman lanjut tanpa suara |
 | **Auto split** | Rekaman dipecah otomatis tiap 5 menit di titik keyframe, jadi satu file bermasalah cuma menghilangkan satu potongan |
 | **Quick Settings tile** | Tile di panel pengaturan cepat: tap saat merekam untuk stop, tap saat idle untuk membuka aplikasi |
@@ -77,7 +77,7 @@ Rilis terakhir:
 
 | File | Ukuran | Build | SHA-256 |
 |---|---|---|---|
-| `app-release.apk` | 93.989 byte | 10 | `2c98dd3f036234405f6521971c54b614ebcae1a1809fd5d04e3ff00447fea666` |
+| `app-release.apk` | 101.053 byte | 11 | `05f9162e449e4e64e7aa3e6c541b652c365babf4e3c33f167efee2601907c5e4` |
 
 File `.sha256` juga ikut diunggah di setiap release, isinya satu baris siap dipakai `sha256sum -c`.
 
@@ -115,6 +115,7 @@ app/src/main/java/com/zrec/recorder/
 
 - Floating control tidak bisa terlihat di layar tapi hilang dari rekaman dengan sempurna. Bola dan target tutupnya sekarang ditandai `FLAG_SECURE`, jadi tidak ikut terekam, tapi di sebagian HP areanya bisa muncul sebagai kotak hitam kecil. Karena itu bola tetap disembunyikan selama merekam, dan kontrol pindah ke notifikasi.
 - Memanggil bola dengan volume bawah 2x hanya bekerja kalau volume benar-benar turun. Kalau media sudah di angka 0, tidak ada perubahan yang bisa dideteksi. Kontrol rekam tetap ada di notifikasi, dan bola muncul sendiri begitu rekaman selesai.
+- Screenshot tanpa dialog butuh **Zrec screenshots** aktif di Setelan > Aksesibilitas. Sekali aktif, berlaku seterusnya; layanan ini tidak membaca isi layar. Kalau tidak diaktifkan, tombol screenshot memakai dialog izin bagikan layar seperti biasa (Android 10 ke bawah memang selalu begitu).
 - Audio internal bisa kosong di aplikasi yang melarang perekaman suaranya. Ini keputusan aplikasi tersebut, bukan bug Zrec.
 - Ganti sumber audio saat merekam baru berlaku untuk rekaman berikutnya, karena jalur audio dibuka sekali di awal file.
 - Rekaman dipecah tiap 5 menit, jadi rekaman 20 menit menghasilkan empat file, bukan satu file besar.
