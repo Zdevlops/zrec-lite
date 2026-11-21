@@ -15,12 +15,11 @@
         android:paddingBottom="32dp">
 
         <TextView
+            style="@style/TextZrecSection"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:text="@string/section_capture"
-            android:textColor="@color/txtFaint"
-            android:textSize="12sp" />
+            android:text="@string/section_capture" />
 
         <LinearLayout
             android:layout_width="match_parent"

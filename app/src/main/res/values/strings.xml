@@ -60,4 +60,15 @@
     <string name="notif_show_control">Show control</string>
     <string name="tile_stop">Stop recording</string>
     <string name="tile_start">Start recording</string>
+    <string name="a11y_label">Zrec screenshots</string>
+    <string name="a11y_desc">Takes a screenshot when you tap the screenshot button in Zrec, without the screen-sharing prompt. Zrec never reads what is on your screen.</string>
+    <string name="shot_access">Screenshot access</string>
+    <string name="shot_on">On · no prompt</string>
+    <string name="shot_off">Off · asks each time</string>
+    <string name="shot_setup_title">Screenshot without the prompt</string>
+    <string name="shot_setup_body">Android only allows a screenshot with no screen-sharing prompt through the accessibility service. Turn on Zrec screenshots once and the button works instantly from then on.\n\nZrec does not read screen content and never leaves the accessibility settings running for anything else.</string>
+    <string name="shot_open_settings">Open settings</string>
+    <string name="shot_later">Not now</string>
+    <string name="shot_use_projection">Use the prompt instead</string>
+    <string name="shot_old_android">Android 10 and older always ask for screen sharing before a screenshot.</string>
 </resources>

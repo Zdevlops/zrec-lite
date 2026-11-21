@@ -188,6 +188,16 @@ object Shot {
             cropped
         }
 
+        val name = runCatching { saveBitmap(ctx, bmp) }.getOrNull()
+        bmp.recycle()
+        return name
+    }
+
+    /**
+     * Writes a bitmap to Pictures/Zrec and returns the file name, or null when the
+     * MediaStore insert failed. The caller keeps ownership of [bmp].
+     */
+    fun saveBitmap(ctx: Context, bmp: Bitmap): String? {
         val name = fileName()
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, name)
@@ -198,14 +208,10 @@ object Shot {
             }
         }
         val uri = ctx.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-            ?: run {
-                bmp.recycle()
-                return null
-            }
+            ?: return null
         val out = ctx.contentResolver.openOutputStream(uri)
         if (out == null) {
             runCatching { ctx.contentResolver.delete(uri, null, null) }
-            bmp.recycle()
             return null
         }
         out.use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
@@ -214,7 +220,6 @@ object Shot {
                 uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null
             )
         }
-        bmp.recycle()
         return name
     }
 }

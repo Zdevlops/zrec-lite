@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-      Switches, radios and the seek bar are off-white on purpose. The only
-      colour in the interface is the recording state, so a control being "on"
-      never competes with it.
+      Gold is the accent and red belongs to the recording state, so a switch being
+      "on" can never be mistaken for a live take.
     -->
     <style name="Theme.Zrec" parent="@android:style/Theme.Material.NoActionBar">
-        <item name="android:colorPrimary">@color/txt</item>
-        <item name="android:colorAccent">@color/txt</item>
-        <item name="android:colorControlActivated">@color/txt</item>
+        <item name="android:colorPrimary">@color/gold</item>
+        <item name="android:colorAccent">@color/gold</item>
+        <item name="android:colorControlActivated">@color/gold</item>
         <item name="android:colorControlNormal">@color/txtFaint</item>
+        <item name="android:colorControlHighlight">@color/goldDim</item>
         <item name="android:windowBackground">@color/bg</item>
         <item name="android:statusBarColor">@color/bg</item>
         <item name="android:navigationBarColor">@color/bg</item>
@@ -18,9 +18,18 @@
         <item name="android:textColorSecondary">@color/txtDim</item>
     </style>
 
+    <!-- Small caps label above every group of rows. -->
+    <style name="TextZrecSection">
+        <item name="android:textColor">@color/goldDim</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:letterSpacing">0.14</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
     <style name="Theme.Zrec.Dialog" parent="@android:style/Theme.Material.Dialog.Alert">
-        <item name="android:colorAccent">@color/txt</item>
-        <item name="android:colorControlActivated">@color/txt</item>
+        <item name="android:colorAccent">@color/gold</item>
+        <item name="android:colorControlActivated">@color/gold</item>
         <item name="android:windowBackground">@drawable/bg_dialog</item>
         <item name="android:textColorPrimary">@color/txt</item>
         <item name="android:textColorSecondary">@color/txtDim</item>

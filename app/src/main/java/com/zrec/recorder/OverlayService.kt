@@ -431,6 +431,14 @@ class OverlayService : Service() {
             // The recorder reports the real result; saying "saved" here first meant two
             // toasts, and the first one was a guess that could be wrong.
             startService(Intent(this, RecorderService::class.java).setAction(RecorderService.ACTION_SHOT))
+        } else if (ShotAccessibilityService.available(this)) {
+            // No consent dialog and no trip through the app: grab the frame right here.
+            val started = ShotAccessibilityService.grabNow { name, why ->
+                handler.post {
+                    toast(if (name != null) "Screenshot saved" else "Screenshot failed: ${why ?: "unknown"}")
+                }
+            }
+            if (!started) toast("Screen capture is starting, try again")
         } else {
             startActivity(
                 Intent(this, MainActivity::class.java)

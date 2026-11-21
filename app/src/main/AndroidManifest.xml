@@ -40,6 +40,21 @@
             android:name=".OverlayService"
             android:exported="false" />
 
+        <!-- The only screenshot path that skips the screen-sharing prompt: the user
+             enables this once in Settings, and it reads no screen content. -->
+        <service
+            android:name=".ShotAccessibilityService"
+            android:exported="true"
+            android:label="@string/a11y_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/shot_service" />
+        </service>
+
         <service
             android:name=".RecorderTileService"
             android:exported="true"

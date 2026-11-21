@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Warm graphite, not the blue-black every generated UI defaults to. -->
-    <color name="bg">#FF121110</color>
-    <color name="surface">#FF1B1917</color>
-    <color name="surface2">#FF26231F</color>
-    <color name="line">#FF2B2723</color>
+    <!-- Near-black with a warm cast. Cream carries the text, gold is the only
+         supporting colour, and red still means exactly one thing: recording. -->
+    <color name="bg">#FF0B0A08</color>
+    <color name="surface">#FF151310</color>
+    <color name="surface2">#FF221E15</color>
+    <color name="line">#FF2E2819</color>
 
-    <color name="txt">#FFF4F1EC</color>
-    <color name="txtDim">#FFA8A29B</color>
-    <color name="txtFaint">#FF8A847A</color>
+    <color name="txt">#FFF5F0E4</color>
+    <color name="txtDim">#FFBDB6A4</color>
+    <color name="txtFaint">#FF9A9280</color>
+
+    <!-- Thin gold: section labels, the active tab underline, switches and sliders. -->
+    <color name="gold">#FFE8C36A</color>
+    <color name="goldDim">#FFC7A24F</color>
+    <color name="goldPress">#FFA7873F</color>
 
     <!-- Red means one thing only: recording is happening. -->
     <color name="accent">#FFE5484D</color>
@@ -16,7 +22,7 @@
     <color name="accentPress">#FFAE3338</color>
 
     <!-- The idle primary action is light, so red never stops meaning "live". -->
-    <color name="btnLight">#FFF4F1EC</color>
-    <color name="btnLightPress">#FFDDD8D0</color>
+    <color name="btnLight">#FFF5F0E4</color>
+    <color name="btnLightPress">#FFE0D8C6</color>
     <color name="onAccent">#FFFFFFFF</color>
 </resources>
