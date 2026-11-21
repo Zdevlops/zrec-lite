@@ -25,8 +25,8 @@ Satu file, tidak ada tambahan lain. Ambil di [Releases](../../releases/latest).
 | **Floating control** | Bola yang bisa digeser di luar aplikasi: record, stop, pause, screenshot, dan ganti sumber audio |
 | **Close by drag** | Geser bola ke target di tengah bawah untuk menutupnya, tanpa masuk ke aplikasi |
 | **Hide while recording** | Bola tampil 2,5 detik saat rekaman mulai, lalu hilang supaya video bersih |
-| **Summon by volume** | Tekan volume bawah dua kali untuk memunculkan bola lagi selama 5 detik |
-| **Shake to stop** | Goyang dua kali saat merekam |
+| **Summon by volume** | Tekan volume bawah dua kali untuk memunculkan bola lagi selama 5 detik. Kalau tombol volume sedang mengatur stream lain, tombol **Show control** di notifikasi tetap bisa dipakai |
+| **Shake to stop** | Goyang dua kali saat merekam, dengan getar pendek sebagai tanda goyangan diterima |
 | **Screenshot** | Bisa saat merekam atau tanpa merekam, tersimpan ke `Pictures/Zrec` |
 | **Audio** | Off, Mic, Internal, atau Mic + internal. Kalau sumbernya ditolak HP, rekaman lanjut tanpa suara |
 | **Auto split** | Rekaman dipecah otomatis tiap 5 menit di titik keyframe, jadi satu file bermasalah cuma menghilangkan satu potongan |
@@ -77,7 +77,7 @@ Rilis terakhir:
 
 | File | Ukuran | Build | SHA-256 |
 |---|---|---|---|
-| `app-release.apk` | 93.297 byte | 9 | `478e91313f1dcca7557f88a50c8c54a9df907e63d290507ea67e0e3bb85fa780` |
+| `app-release.apk` | 93.989 byte | 10 | `2c98dd3f036234405f6521971c54b614ebcae1a1809fd5d04e3ff00447fea666` |
 
 File `.sha256` juga ikut diunggah di setiap release, isinya satu baris siap dipakai `sha256sum -c`.
 
