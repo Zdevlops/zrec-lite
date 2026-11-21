@@ -69,6 +69,7 @@
     <string name="shot_setup_body">Android only allows a screenshot with no screen-sharing prompt through the accessibility service. Turn on Zrec screenshots once and the button works instantly from then on.\n\nZrec does not read screen content and never leaves the accessibility settings running for anything else.</string>
     <string name="shot_open_settings">Open settings</string>
     <string name="shot_later">Not now</string>
+    <string name="shot_starting">Screenshot access is starting, try again</string>
     <string name="shot_use_projection">Use the prompt instead</string>
     <string name="shot_old_android">Android 10 and older always ask for screen sharing before a screenshot.</string>
 </resources>

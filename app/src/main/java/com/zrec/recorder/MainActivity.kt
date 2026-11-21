@@ -602,7 +602,7 @@ class MainActivity : Activity() {
                 val started = ShotAccessibilityService.grabNow { name, why ->
                     runOnUiThread { shotDone(name, why) }
                 }
-                if (!started) Toast.makeText(this, R.string.shot_off, Toast.LENGTH_SHORT).show()
+                if (!started) Toast.makeText(this, R.string.shot_starting, Toast.LENGTH_SHORT).show()
                 return
             }
             shotAccessDialog()
